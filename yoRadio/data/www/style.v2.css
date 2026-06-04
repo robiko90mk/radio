@@ -105,3 +105,22 @@ footer{padding:12px 24px;border-top:1px solid rgba(255,255,255,0.03);font-size:1
   main{grid-template-columns: minmax(220px,320px) minmax(360px,1fr);}
   .extras{display:none}
 }
+
+/* Settings layout fixes: prevent labels/input overlap and auto-fit content */
+#settings-section{grid-column:1 / -1;margin:26px auto;max-width:1100px}
+#settings-section .settings-panel{display:block}
+#settings-section .settings-panel h3{margin-top:0}
+#settings-section label{display:block;margin-bottom:10px;word-break:break-word}
+#settings-section label br{display:none}
+#settings-section label>select,#settings-section label>input,#settings-section textarea{width:100%;box-sizing:border-box}
+#settings-section .wifi-row{display:flex;gap:8px;align-items:center}
+#settings-section .wifi-row input{flex:1;min-width:0}
+#settings-section .settings-panel > div{margin-bottom:6px}
+#settings-section{overflow:auto;max-height:calc(100vh - 120px);padding:16px}
+
+/* Make checkbox labels inline but vertically aligned */
+#settings-section label input[type=checkbox]{display:inline-block;margin-right:8px;vertical-align:middle}
+
+@media(max-width:900px){
+  #settings-section{max-width:92%;margin:12px}
+}
