@@ -307,6 +307,43 @@
         alert('Zapisano bieżące wartości jako domyślne.');
       });
     }
+    // --- provide ability to import fields from embedded device iframe ---
+    const importBtn = document.getElementById('customize-import-from-device');
+    const iframe = document.getElementById('device-customize-iframe');
+    const openBtn = document.getElementById('customize-open-device');
+    if(openBtn){ openBtn.addEventListener('click', ()=>{ window.open('http://192.168.0.21/customize.html','_blank'); }); }
+    if(importBtn && iframe){
+      importBtn.addEventListener('click', ()=>{
+        try{
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          if(!doc) return alert('Nie udało się uzyskać dostępu do zawartości iframe');
+          // gather inputs from device page
+          const devFields = Array.from(doc.querySelectorAll('input,select,textarea'));
+          let imported=0;
+          devFields.forEach(df=>{
+            const id = df.id || df.name;
+            if(!id) return;
+            const val = (df.type === 'checkbox') ? df.checked : df.value;
+            // try to find matching input in customizeContainer
+            let target = customizeContainer.querySelector(`[data-key="${id}"]`) || customizeContainer.querySelector(`#${id}`) || customizeContainer.querySelector(`[name="${id}"]`);
+            if(target){
+              if(target.type === 'checkbox') target.checked = !!val; else target.value = val;
+              imported++;
+            } else {
+              // create new row for unknown field
+              const row = document.createElement('div'); row.style.margin='6px 0';
+              const label = document.createElement('label'); label.textContent = id; label.style.fontWeight='600';
+              let input;
+              if(df.type === 'checkbox'){ input = document.createElement('input'); input.type='checkbox'; input.checked = !!val; }
+              else if(df.type === 'number'){ input = document.createElement('input'); input.type='number'; input.value = val; }
+              else { input = document.createElement('input'); input.type='text'; input.value = val; }
+              input.dataset.key = id; input.style.width='100%'; row.appendChild(label); row.appendChild(input); customizeContainer.appendChild(row); imported++;
+            }
+          });
+          alert('Importowano pola z urządzenia: '+imported);
+        }catch(e){ console.error(e); alert('Błąd importu z iframe: '+e.message); }
+      });
+    }
     // Reset to original myoptions.h (from file)
     const resetOriginalBtn = document.getElementById('customize-reset-original');
     if(resetOriginalBtn){

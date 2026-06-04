@@ -211,13 +211,21 @@
 
         <div id="tab-customize-panel" class="settings-panel" style="display:none">
           <h3>Customize (1:1 z urządzenia)</h3>
-          <p>Wszystkie klucze z <code>myoptions.h</code> w formie edytowalnej (1:1). Pola są generowane automatycznie po wczytaniu ustawień projektu.</p>
-          <div style="display:flex;gap:8px;margin-top:8px">
+          <p>Dokładna kopia strony konfiguracji urządzenia po lewej; po prawej edytor 1:1 wygenerowany z <code>myoptions.h</code>. Użyj <strong>Importuj z urządzenia</strong>, aby skopiować pola 1:1, lub edytuj ręcznie po prawej.</p>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <button id="customize-import-from-device" class="btn">Importuj z urządzenia (1:1)</button>
+            <button id="customize-open-device" class="btn">Otwórz oryginał (nowe okno)</button>
+            <div style="flex:1"></div>
             <button id="customize-reset-all" class="btn">Reset wszystkie</button>
-            <button id="customize-reset-original" class="btn">Reset wszystkie do myoptions.h</button>
+            <button id="customize-reset-original" class="btn">Reset do myoptions.h</button>
             <button id="customize-save-defaults" class="btn">Zapisz jako domyślne</button>
           </div>
-          <div id="customize-container" style="margin-top:8px"></div>
+          <div id="customize-split" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;align-items:start">
+            <div style="border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,0.04)">
+              <iframe id="device-customize-iframe" src="device_settings.html" style="width:100%;height:680px;border:0;background:#fff"></iframe>
+            </div>
+            <div id="customize-container" style="min-height:640px;padding:10px;border-radius:8px;background:var(--card);box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)"></div>
+          </div>
         </div>
       </div>
 
