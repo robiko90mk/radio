@@ -11,6 +11,7 @@ import asyncio
 import json
 from aiohttp import web, WSCloseCode
 from pathlib import Path
+import csv
 
 ROOT = Path(__file__).resolve().parents[1] / 'yoRadio' / 'data' / 'www'
 
@@ -18,12 +19,49 @@ state = {
     'playing': False,
     'volume': 50,
     'track': {'title': 'Demo Track', 'artist': 'yoRadio', 'stream': 'Local'},
-    'playlist': [
-        {'title': 'Internet Radio 1', 'url': 'http://stream.example/1'},
-        {'title': 'Podcast Episode 2', 'url': 'http://pod.example/ep2.mp3'},
-    ],
+
+    # playlist will be populated from playlist.csv if present
+    'playlist': [],
     'eq': { '60':0, '250':0, '1000':0, '4000':0, '10000':0 }
 }
+
+
+def load_playlist_from_csv():
+    # search likely locations for playlist.csv
+    candidates = [
+        Path(__file__).resolve().parents[1] / 'playlist.csv',
+        Path(__file__).resolve().parents[2] / 'playlist.csv',
+        ROOT / 'playlist.csv'
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                with p.open('r', encoding='utf-8') as fh:
+                    sample = fh.read(2048)
+                    fh.seek(0)
+                    dialect = csv.Sniffer().sniff(sample, delimiters='\t,;')
+                    fh.seek(0)
+                    reader = csv.reader(fh, dialect)
+                    out = []
+                    for row in reader:
+                        if not row: continue
+                        # try to map: title, url, maybe other columns
+                        title = row[0].strip() if len(row) > 0 else ''
+                        url = row[1].strip() if len(row) > 1 else ''
+                        if url:
+                            out.append({'title': title or url, 'url': url})
+                    return out
+            except Exception:
+                return []
+    return []
+
+
+# populate playlist at startup if CSV found
+csv_list = load_playlist_from_csv()
+if csv_list:
+    state['playlist'] = csv_list
+    if csv_list:
+        state['track'] = csv_list[0]
 
 WS_CLIENTS = set()
 
