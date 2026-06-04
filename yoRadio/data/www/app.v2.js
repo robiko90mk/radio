@@ -188,6 +188,15 @@
     // put full parsed JSON into editor
     const raw = document.getElementById('adv-raw-settings'); if(raw) raw.value = JSON.stringify(parsed,null,2);
 
+    // populate device-like fields 1:1 where possible
+    try{
+      Object.keys(parsed).forEach(k=>{
+        // direct id match
+        const elById = document.getElementById(k.toLowerCase()) || document.getElementById(k);
+        if(elById){ if(elById.type==='checkbox') elById.checked = !!parsed[k]; else elById.value = String(parsed[k]); }
+      });
+    }catch(e){}
+
     // build dynamic inputs for any remaining keys (not present as structured fields)
     const mappedKeys = new Set(Object.keys(map));
     const dynContainer = document.createElement('div'); dynContainer.style.marginTop='12px';
@@ -226,20 +235,26 @@
   }
 
   function collectSettingsFromContainer(){
-    const inputs = Array.from(settingsContainer.querySelectorAll('input'));
+    // collect from the whole settings section (structured fields + dynamic container)
+    const selector = '#settings-section input, #settings-section select, #settings-section textarea';
+    const inputs = Array.from(document.querySelectorAll(selector));
     const out = {};
+    // reverse id->key map for common mapped fields
+    const reverse = {
+      'sys-language':'L10N_LANGUAGE','audio-initial-volume':'INITIAL_VOLUME','audio-fixed-volume':'FIXED_VOLUME','audio-force-mono':'PLAYER_FORCE_MONO','audio-remove-audio-controls':'REMOVE_AUDIO_CONTROLS','sys-mute-pin':'MUTE_PIN','sys-display-brightness':'BRIGHTNESS_PIN','sys-vu':'VU_PEAK',
+      'br':'BRIGHTNESS_PIN','scrt':'SCREENSAVER_TIMEOUT','scrpe':'SCREENSAVER_PLAYING_ENABLED','scrpb':'SCREENSAVER_PLAYING_BLANK','scrpt':'SCREENSAVER_PLAYING_TIMEOUT',
+      'vols':'VOL_STEPS','enca':'ENC_ACCEL','irtl':'IR_TOLERANCE','tzh':'TZ_HOURS','tzm':'TZ_MINUTES','sntp1':'SNTP1','sntp2':'SNTP2',
+      'wlat':'W_LAT','wlon':'W_LON','wkey':'W_KEY','grndHeight':'grndHeight','pressureSlope_x1000':'pressureSlope_x1000','wint':'W_INTERVAL',
+      'ssid0':'SSID0','ssid1':'SSID1','ssid2':'SSID2','ssid3':'SSID3','ssid4':'SSID4','pass0':'PASS0','pass1':'PASS1','pass2':'PASS2','pass3':'PASS3','pass4':'PASS4'
+    };
     inputs.forEach(inp=>{
-      const key = inp.dataset.key;
-      // also allow structured fields that have ids mapped to keys
-      if(!key){
-        // try reverse map lookup from id
-        const id = inp.id; if(!id) return; const reverse = {
-          'sys-language':'L10N_LANGUAGE','audio-initial-volume':'INITIAL_VOLUME','audio-fixed-volume':'FIXED_VOLUME','audio-force-mono':'PLAYER_FORCE_MONO','audio-remove-audio-controls':'REMOVE_AUDIO_CONTROLS','sys-mute-pin':'MUTE_PIN','sys-display-brightness':'BRIGHTNESS_PIN','sys-vu':'VU_PEAK'
-        };
-        if(reverse[id]) inp.dataset.key = reverse[id]; else return;
-      }
+      // determine key: explicit data-key preferred, else reverse map by id, else use id
+      let key = inp.dataset && inp.dataset.key ? inp.dataset.key : (inp.id ? (reverse[inp.id] || inp.id) : null);
+      if(!key) return;
       if(inp.type === 'checkbox') out[key] = !!inp.checked;
-      else if(inp.type === 'number') out[key] = parseInt(inp.value||0);
+      else if(inp.type === 'number') out[key] = (inp.value===''? null : parseFloat(inp.value));
+      else if(inp.tagName === 'SELECT') out[key] = inp.value;
+      else if(inp.tagName === 'TEXTAREA') out[key] = inp.value;
       else out[key] = inp.value;
     });
     return out;
