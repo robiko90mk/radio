@@ -165,25 +165,16 @@
     }
     const parsed = res.settings || {};
     settingsContainer.innerHTML = '';
-    // sort keys to show important ones first
-    const preferred = ['L10N_LANGUAGE','INITIAL_VOLUME','FIXED_VOLUME','PLAYER_FORCE_MONO','REMOVE_AUDIO_CONTROLS','MUTE_PIN'];
-    const keys = Object.keys(parsed).sort((a,b)=>{ const ia=preferred.indexOf(a), ib=preferred.indexOf(b); if(ia!==-1||ib!==-1) return (ia===-1?1:ia) - (ib===-1?1:ib); return a.localeCompare(b); });
-    keys.forEach(k=>{
-      const v = parsed[k];
-      const row = document.createElement('div'); row.style.margin='6px 0';
-      const label = document.createElement('label'); label.style.display='block'; label.style.fontWeight='600'; label.textContent = k;
-      let input;
-      if(typeof v === 'boolean'){
-        input = document.createElement('input'); input.type='checkbox'; input.checked = v; input.dataset.key=k;
-      } else if(Number.isInteger(v) || (/^-?\d+$/.test(String(v)))){
-        input = document.createElement('input'); input.type='number'; input.value = String(v); input.dataset.key=k;
-      } else {
-        input = document.createElement('input'); input.type='text'; input.value = String(v); input.dataset.key=k;
-      }
-      input.style.marginTop='6px'; input.style.width='100%';
-      row.appendChild(label); row.appendChild(input); settingsContainer.appendChild(row);
-    });
-    // allow applying directly from built form
+    // populate structured fields from parsed values
+    try{
+      if(parsed.L10N_LANGUAGE) document.getElementById('tab-system-panel') && (document.getElementById('sys-timezone-offset').value = parsed.L10N_LANGUAGE);
+    }catch(e){}
+    if(typeof parsed.INITIAL_VOLUME !== 'undefined') document.getElementById('audio-initial-volume').value = parsed.INITIAL_VOLUME;
+    if(typeof parsed.FIXED_VOLUME !== 'undefined') document.getElementById('audio-initial-volume').value = parsed.FIXED_VOLUME;
+    if(typeof parsed.MUTE_PIN !== 'undefined') document.getElementById('sys-display-brightness') && (document.getElementById('sys-display-brightness').value = parsed.MUTE_PIN);
+    if(typeof parsed.PLAYER_FORCE_MONO !== 'undefined') document.getElementById('audio-force-mono').checked = parsed.PLAYER_FORCE_MONO;
+    if(typeof parsed.REMOVE_AUDIO_CONTROLS !== 'undefined') document.getElementById('audio-force-mono').checked = parsed.REMOVE_AUDIO_CONTROLS;
+    // note: not all fields map 1:1; users can edit manually
   }
 
   function collectSettingsFromContainer(){
@@ -213,6 +204,24 @@
   });
 
   document.getElementById('cancel-settings')?.addEventListener('click', ()=>{ settingsSection.style.display='none'; document.querySelector('main').style.display='grid'; openSettingsBtn.textContent='Ustawienia'; });
+  // tab switching
+  function showTab(id){
+    ['system','playlists','audio','weather','advanced'].forEach(k=>{
+      const panel = document.getElementById('tab-'+k+'-panel'); if(panel) panel.style.display = (k===id? 'block':'none');
+    });
+  }
+  document.getElementById('tab-system')?.addEventListener('click', ()=> showTab('system'));
+  document.getElementById('tab-playlists')?.addEventListener('click', ()=> showTab('playlists'));
+  document.getElementById('tab-audio')?.addEventListener('click', ()=> showTab('audio'));
+  document.getElementById('tab-weather')?.addEventListener('click', ()=> showTab('weather'));
+  document.getElementById('tab-advanced')?.addEventListener('click', ()=> showTab('advanced'));
+  showTab('system');
+
+  document.getElementById('goto-playlist')?.addEventListener('click', ()=>{ settingsSection.style.display='none'; document.querySelector('main').style.display='grid'; openSettingsBtn.textContent='Ustawienia'; const el = document.querySelector('.playlist'); if(el) el.scrollIntoView({behavior:'smooth'}); });
+
+  document.getElementById('download-wifi-template')?.addEventListener('click', ()=>{
+    const txt = 'SSID\tPASSWORD\n'; const blob = new Blob([txt], {type:'text/plain'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='wifi.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
 
   // EQ preset buttons
   document.querySelectorAll('[data-preset]').forEach(b=> b.addEventListener('click', ()=>{
