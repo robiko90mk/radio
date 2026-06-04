@@ -65,6 +65,26 @@ canvas#viz{width:100%;height:110px;border-radius:8px;background:linear-gradient(
 .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;color:#022}
 .btn:active{transform:translateY(0)}
 
+/* make eq sliders wrap to avoid overflow in narrow cards */
+.eq-sliders{flex-wrap:wrap;justify-content:center}
+.extras .card{overflow:hidden}
+.eq-band{flex:1 1 90px;min-width:68px}
+
+/* Play button pulse animation for a professional touch */
+@keyframes pulse {
+  0% { box-shadow: 0 12px 30px rgba(59,160,255,0.10), 0 8px 40px rgba(11,46,72,0.6); transform:scale(1); }
+  50% { box-shadow: 0 22px 48px rgba(59,160,255,0.18), 0 12px 60px rgba(11,46,72,0.66); transform:scale(1.03); }
+  100% { box-shadow: 0 12px 30px rgba(59,160,255,0.10), 0 8px 40px rgba(11,46,72,0.6); transform:scale(1); }
+}
+.play-btn.active{animation:pulse 1.6s infinite cubic-bezier(.4,0,.2,1)}
+
+/* Modal responsiveness */
+.modal{max-width:92%;width:420px}
+.modal input{width:100%;box-sizing:border-box}
+
+/* Ensure playlist actions stay in card */
+.playlist .playlist-actions{display:flex;gap:8px;justify-content:center;margin-top:12px}
+
 footer{padding:12px 24px;border-top:1px solid rgba(255,255,255,0.03);font-size:13px;color:var(--muted);max-width:1280px;margin:8px auto}
 
 @media(max-width:1100px){main{grid-template-columns:1fr;padding:12px}}

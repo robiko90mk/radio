@@ -10,13 +10,13 @@
 <body>
   <header>
     <h1>yoRadio</h1>
-    <div class="status" id="ws-status">WS: disconnected</div>
+    <div class="status" id="ws-status">WS: rozłączony</div>
     <div class="theme-toggle">
-      <label>Theme</label>
+      <label>Motyw</label>
       <select id="theme-select">
         <option value="auto">Auto</option>
-        <option value="dark">Dark</option>
-        <option value="light">Light</option>
+        <option value="dark">Ciemny</option>
+        <option value="light">Jasny</option>
       </select>
     </div>
   </header>
@@ -45,33 +45,33 @@
     </section>
 
     <section class="playlist card">
-      <h2>Playlist</h2>
+      <h2>Lista odtwarzania</h2>
       <ul id="playlist" class="list" draggable="true"></ul>
       <div class="playlist-actions">
-        <button id="add-url" class="btn">Add URL</button>
-        <button id="save-playlist" class="btn">Save</button>
+        <button id="add-url" class="btn">Dodaj URL</button>
+        <button id="save-playlist" class="btn">Zapisz</button>
       </div>
     </section>
 
     <section class="extras card">
-      <h3>EQ Presets</h3>
+      <h3>Presety korektora</h3>
       <div class="eq-presets">
         <button data-preset="flat" class="btn">Flat</button>
         <button data-preset="rock" class="btn">Rock</button>
         <button data-preset="jazz" class="btn">Jazz</button>
         <button data-preset="pop" class="btn">Pop</button>
-        <button id="save-eq" class="btn">Save Preset</button>
+        <button id="save-eq" class="btn">Zapisz preset</button>
       </div>
       <div class="eq-sliders" id="eq-sliders">
         <!-- sliders inserted by JS: bands 60,250,1k,4k,10k -->
       </div>
-      <h3>Visualizer</h3>
+      <h3>Wizualizer</h3>
       <canvas id="viz" height="110"></canvas>
     </section>
   </main>
 
   <footer>
-    <small>Connected to device: <span id="device-host">—</span></small>
+    <small>Połączono z urządzeniem: <span id="device-host">—</span></small>
   </footer>
 
   <script src="app.v2.js?v=2"></script>
