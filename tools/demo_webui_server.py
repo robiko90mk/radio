@@ -243,6 +243,22 @@ async def api_settings(request):
             pass
     return web.json_response({'ok': True})
 
+
+async def api_fetch_device_customize(request):
+    # proxy a device page to avoid CORS in browser when embedding
+    qs = request.rel_url.query
+    host = qs.get('host', '192.168.0.21')
+    path = qs.get('path', '/customize.html')
+    url = f'http://{host}{path}'
+    import aiohttp
+    try:
+        async with aiohttp.ClientSession() as sess:
+            async with sess.get(url, timeout=10) as r:
+                text = await r.text()
+                return web.Response(text=text, content_type='text/html')
+    except Exception as e:
+        return web.json_response({'error': 'fetch failed', 'detail': str(e)}, status=502)
+
 async def broadcast_state():
     data = json.dumps(state)
     to_remove = []
@@ -267,6 +283,7 @@ def main():
     app.router.add_get('/ws', ws_handler)
     app.router.add_get('/api/state', api_state)
     app.router.add_get('/api/import_myoptions', api_import_myoptions)
+    app.router.add_get('/api/fetch_device_customize', api_fetch_device_customize)
     app.router.add_post('/api/control', api_control)
     app.router.add_post('/api/settings', api_settings)
     app.router.add_put('/api/playlist', api_playlist)

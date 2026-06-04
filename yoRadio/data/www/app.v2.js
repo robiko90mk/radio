@@ -309,39 +309,49 @@
     }
     // --- provide ability to import fields from embedded device iframe ---
     const importBtn = document.getElementById('customize-import-from-device');
-    const iframe = document.getElementById('device-customize-iframe');
+    const hosted = document.getElementById('device-customize-hosted');
     const openBtn = document.getElementById('customize-open-device');
     if(openBtn){ openBtn.addEventListener('click', ()=>{ window.open('http://192.168.0.21/customize.html','_blank'); }); }
-    if(importBtn && iframe){
-      importBtn.addEventListener('click', ()=>{
+    // load proxied device HTML into hosted container
+    async function loadDeviceIntoHost(host='192.168.0.21'){
+      if(!hosted) return;
+      hosted.innerHTML = '<div class="status">Ładowanie zawartości urządzenia...</div>';
+      try{
+        const res = await api(`/api/fetch_device_customize?host=${encodeURIComponent(host)}`,'GET');
+        if(!res || res.error){ hosted.innerHTML = `<div class="status">Błąd pobierania zawartości urządzenia</div>`; return; }
+        // res is text when returned as HTML; but api() tries to parse JSON. Instead fetch directly.
+      }catch(e){ /* ignore */ }
+      // direct fetch to preserve raw HTML
+      try{
+        const r = await fetch(`/api/fetch_device_customize?host=${encodeURIComponent(host)}`);
+        if(!r.ok) { hosted.innerHTML = `<div class="status">Błąd serwera: ${r.status}</div>`; return; }
+        const html = await r.text();
+        hosted.innerHTML = html;
+      }catch(e){ hosted.innerHTML = `<div class="status">Błąd sieci: ${e.message}</div>`; }
+    }
+    // load now (but only when user opens Customize tab via buildSettingsForm -> called earlier)
+    loadDeviceIntoHost('192.168.0.21');
+
+    if(importBtn && hosted){
+      importBtn.addEventListener('click', async ()=>{
         try{
-          const doc = iframe.contentDocument || iframe.contentWindow.document;
-          if(!doc) return alert('Nie udało się uzyskać dostępu do zawartości iframe');
-          // gather inputs from device page
+          // fetch proxied HTML and parse
+          const r = await fetch(`/api/fetch_device_customize?host=192.168.0.21`);
+          if(!r.ok) return alert('Błąd pobierania z urządzenia');
+          const html = await r.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html,'text/html');
           const devFields = Array.from(doc.querySelectorAll('input,select,textarea'));
           let imported=0;
           devFields.forEach(df=>{
-            const id = df.id || df.name;
-            if(!id) return;
-            const val = (df.type === 'checkbox') ? df.checked : df.value;
-            // try to find matching input in customizeContainer
+            const id = df.id || df.name; if(!id) return;
+            const val = (df.type === 'checkbox') ? df.checked : df.value || df.getAttribute('value') || '';
             let target = customizeContainer.querySelector(`[data-key="${id}"]`) || customizeContainer.querySelector(`#${id}`) || customizeContainer.querySelector(`[name="${id}"]`);
-            if(target){
-              if(target.type === 'checkbox') target.checked = !!val; else target.value = val;
-              imported++;
-            } else {
-              // create new row for unknown field
-              const row = document.createElement('div'); row.style.margin='6px 0';
-              const label = document.createElement('label'); label.textContent = id; label.style.fontWeight='600';
-              let input;
-              if(df.type === 'checkbox'){ input = document.createElement('input'); input.type='checkbox'; input.checked = !!val; }
-              else if(df.type === 'number'){ input = document.createElement('input'); input.type='number'; input.value = val; }
-              else { input = document.createElement('input'); input.type='text'; input.value = val; }
-              input.dataset.key = id; input.style.width='100%'; row.appendChild(label); row.appendChild(input); customizeContainer.appendChild(row); imported++;
-            }
+            if(target){ if(target.type === 'checkbox') target.checked = !!val; else target.value = val; imported++; }
+            else { const row = document.createElement('div'); row.style.margin='6px 0'; const label = document.createElement('label'); label.textContent = id; label.style.fontWeight='600'; let input; if(df.type==='checkbox'){ input=document.createElement('input'); input.type='checkbox'; input.checked=!!val; } else if(df.type==='number'){ input=document.createElement('input'); input.type='number'; input.value=val; } else { input=document.createElement('input'); input.type='text'; input.value=val; } input.dataset.key=id; input.style.width='100%'; row.appendChild(label); row.appendChild(input); customizeContainer.appendChild(row); imported++; }
           });
           alert('Importowano pola z urządzenia: '+imported);
-        }catch(e){ console.error(e); alert('Błąd importu z iframe: '+e.message); }
+        }catch(e){ console.error(e); alert('Błąd importu: '+e.message); }
       });
     }
     // Reset to original myoptions.h (from file)
