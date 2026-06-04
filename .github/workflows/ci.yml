@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  scan_todos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create reports dir
+        run: mkdir -p reports
+      - name: Scan TODO/FIXME
+        run: |
+          grep -RIn --exclude-dir=.git -E "TODO|FIXME" || true
+          grep -RIn --exclude-dir=.git -E "TODO|FIXME" > reports/todos.txt || true
+      - name: Upload todo report
+        uses: actions/upload-artifact@v3
+        with:
+          name: todo-report
+          path: reports/todos.txt
+
+  build_platformio:
+    runs-on: ubuntu-latest
+    needs: scan_todos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install PlatformIO
+        run: pip install -U platformio
+      - name: Create reports dir
+        run: mkdir -p reports
+      - name: Find and build PlatformIO projects
+        run: |
+          FILES=$(find . -name platformio.ini -not -path "./.pio*" -print)
+          if [ -z "$FILES" ]; then
+            echo "No platformio.ini files found"
+            exit 0
+          fi
+          echo "$FILES" > reports/pio-files.txt
+          for f in $FILES; do
+            d=$(dirname "$f")
+            echo "Building $d"
+            platformio run -d "$d"
+          done
+      - name: Upload pio files list
+        uses: actions/upload-artifact@v3
+        with:
+          name: pio-files
+          path: reports/pio-files.txt
