@@ -169,8 +169,9 @@
   // dynamic settings form will be built on settings open
 
   // build dynamic settings form from myoptions.h on settings open
-  const settingsContainer = document.getElementById('settings-form-container');
   async function buildSettingsForm(){
+    const settingsContainer = document.getElementById('settings-form-container');
+    if(!settingsContainer){ console.warn('No settings-form-container found'); return; }
     settingsContainer.innerHTML = '<div class="status">Ładowanie ustawień projektu...</div>';
     const res = await api('/api/import_myoptions','GET');
     if(!res || (!res.settings && !res.content)){
@@ -190,7 +191,11 @@
       'REMOVE_AUDIO_CONTROLS': 'audio-remove-audio-controls',
       'MUTE_PIN': 'sys-mute-pin',
       'BRIGHTNESS_PIN': 'sys-display-brightness',
-      'VU_PEAK': 'sys-vu'
+      'VU_PEAK': 'sys-vu',
+      'MDNS_NAME': 'sys-mdns',
+      'SOFTAP_REBOOT_DELAY': 'sys-softr',
+      'AUDIO_BUFFER': 'sys-abuff',
+      'NUMBERED_PLAYLIST': 'display-nump'
     };
     Object.keys(map).forEach(k=>{
       try{
@@ -236,7 +241,53 @@
     // --- Populate Customize 1:1 container (separate tab) ---
     const customizeContainer = document.getElementById('customize-container');
     if(customizeContainer){
+      // Prefer embedding the device's own customize.html for exact parity.
       customizeContainer.innerHTML = '';
+      const iframe = document.createElement('iframe');
+      iframe.src = '/customize.html';
+      iframe.style.width = '100%';
+      iframe.style.height = '720px';
+      iframe.style.border = '1px solid var(--muted)';
+      iframe.title = 'Device Customize (embedded)';
+      customizeContainer.appendChild(document.createElement('div'));
+      // header note
+      const note = document.createElement('div'); note.style.marginBottom='8px'; note.style.color='var(--muted)'; note.textContent = 'Wbudowana strona urządzenia (pełna zgodność). Możesz przełączać widok na natywny 1:1.';
+      // create sub-tabs inside Customize panel for a professional settings layout
+      const subnav = document.createElement('div'); subnav.className = 'settings-subnav'; subnav.style.display='flex'; subnav.style.gap='8px'; subnav.style.marginBottom='12px';
+      const tabDevice = document.createElement('button'); tabDevice.className='btn small active'; tabDevice.textContent='Device';
+      const tabNative = document.createElement('button'); tabNative.className='btn small'; tabNative.textContent='1:1 (native)';
+      const tabOpen = document.createElement('button'); tabOpen.className='btn small'; tabOpen.textContent='Otwórz w nowym oknie';
+      subnav.appendChild(tabDevice); subnav.appendChild(tabNative); subnav.appendChild(tabOpen);
+
+      // content areas
+      const deviceArea = document.createElement('div'); deviceArea.style.display='block'; deviceArea.style.marginTop='6px';
+      const nativeArea = document.createElement('div'); nativeArea.style.display='none'; nativeArea.style.marginTop='6px'; nativeArea.id = 'customize-native';
+
+      // iframe for device page
+      const iframe = document.createElement('iframe'); iframe.src = '/customize.html'; iframe.style.width='100%'; iframe.style.height='720px'; iframe.style.border='1px solid var(--muted)'; iframe.title = 'Device Customize (embedded)';
+      deviceArea.appendChild(iframe);
+
+      // assemble customize container
+      customizeContainer.appendChild(note); customizeContainer.appendChild(subnav); customizeContainer.appendChild(deviceArea); customizeContainer.appendChild(nativeArea);
+
+      // store parsed globally for native builder
+      window.currentParsedSettings = parsed;
+
+      tabOpen.addEventListener('click', ()=> window.open('/customize.html','_blank'));
+      tabDevice.addEventListener('click', ()=>{
+        tabDevice.classList.add('active'); tabNative.classList.remove('active'); deviceArea.style.display='block'; nativeArea.style.display='none';
+      });
+      tabNative.addEventListener('click', ()=>{
+        tabNative.classList.add('active'); tabDevice.classList.remove('active'); deviceArea.style.display='none'; nativeArea.style.display='block';
+        // build native view on demand
+        try{ buildCustomizeNative(nativeArea, window.currentParsedSettings); }catch(e){ console.error(e); }
+      });
+    }
+
+    // build the native 1:1 customize editor
+    function buildCustomizeNative(container, parsed){
+      container.innerHTML = '';
+      if(!parsed) return container.textContent = 'Brak danych do wyświetlenia';
       const table = document.createElement('div'); table.style.display='grid'; table.style.gridTemplateColumns='1fr 1fr'; table.style.gap='8px';
       Object.keys(parsed).sort().forEach(k=>{
         const v = parsed[k];
@@ -244,10 +295,8 @@
         const head = document.createElement('div'); head.style.display='flex'; head.style.justifyContent='space-between'; head.style.alignItems='center';
         const lbl = document.createElement('label'); lbl.textContent = k; lbl.style.fontWeight='600'; lbl.style.fontSize='13px'; lbl.style.marginRight='8px';
         const actions = document.createElement('div'); actions.className='custom-actions';
-        // help icon if available
         const helpTxt = (typeof helpTexts !== 'undefined' && helpTexts[k]) ? helpTexts[k] : '';
         if(helpTxt){ const help = document.createElement('span'); help.className='custom-help'; help.textContent='?'; help.title = helpTxt; actions.appendChild(help); }
-        // reset button
         const reset = document.createElement('button'); reset.type='button'; reset.className='btn'; reset.textContent='Reset'; reset.dataset.key = k; reset.dataset.default = String(v);
         reset.style.padding='4px 8px'; reset.style.fontSize='12px'; actions.appendChild(reset);
         head.appendChild(lbl); head.appendChild(actions);
@@ -261,7 +310,29 @@
         }
         inp.style.width='100%'; wrap.appendChild(head); wrap.appendChild(inp); table.appendChild(wrap);
       });
-      customizeContainer.appendChild(table);
+      // add save/import controls
+      const ctl = document.createElement('div'); ctl.style.gridColumn = '1 / -1'; ctl.style.display='flex'; ctl.style.gap='8px'; ctl.style.marginTop='8px';
+      const saveBtn = document.createElement('button'); saveBtn.className='btn primary'; saveBtn.textContent='Zapisz 1:1 (demo)';
+      const applyBtn = document.createElement('button'); applyBtn.className='btn'; applyBtn.textContent='Zastosuj 1:1';
+      ctl.appendChild(saveBtn); ctl.appendChild(applyBtn);
+      container.appendChild(table); container.appendChild(ctl);
+
+      // wire reset buttons
+      container.querySelectorAll('button[data-key]').forEach(b=> b.addEventListener('click', ()=>{
+        const key = b.dataset.key; const def = b.dataset.default; const inp = container.querySelector(`[data-key="${key}"]`);
+        if(!inp) return; if(inp.type==='checkbox') inp.checked = (def === 'true'); else inp.value = def;
+      }));
+
+      saveBtn.addEventListener('click', ()=>{
+        const inputs = container.querySelectorAll('[data-key]'); const obj = {};
+        inputs.forEach(inp=>{ const key=inp.dataset.key; let val; if(inp.type==='checkbox') val=!!inp.checked; else if(inp.type==='number') val=(inp.value===''? null:(isNaN(Number(inp.value))? inp.value:Number(inp.value))); else val=inp.value; obj[key]=val; });
+        api('/api/settings','POST',{settings:obj,persist:true}).then(r=>{ if(r && r.ok) alert('Zapisano 1:1 (demo)'); else alert('Błąd zapisu'); });
+      });
+      applyBtn.addEventListener('click', ()=>{
+        const inputs = container.querySelectorAll('[data-key]'); const obj = {};
+        inputs.forEach(inp=>{ const key=inp.dataset.key; let val; if(inp.type==='checkbox') val=!!inp.checked; else if(inp.type==='number') val=(inp.value===''? null:(isNaN(Number(inp.value))? inp.value:Number(inp.value))); else val=inp.value; obj[key]=val; });
+        api('/api/settings','POST',{settings:obj}).then(r=>{ if(r && r.ok) alert('Zastosowano 1:1 (demo)'); else alert('Błąd zastosowania'); });
+      });
     }
     // wire reset buttons
     try{
@@ -387,8 +458,8 @@
     const wlon = (document.getElementById('weather-lon') && parseFloat(document.getElementById('weather-lon').value)) || null;
     const wkey = (document.getElementById('weather-apikey') && document.getElementById('weather-apikey').value) || '';
     if(weatherEnabled){ if(wkey.trim()==='') return alert('OpenWeather API key jest wymagany, gdy pogoda jest włączona'); if(wlat!==null && (wlat<-90 || wlat>90)) return alert('Latitude musi być w zakresie -90..90'); if(wlon!==null && (wlon<-180 || wlon>180)) return alert('Longitude musi być w zakresie -180..180'); }
-    // mdns length
-    const mdns = document.getElementById('mdns'); if(mdns && mdns.value && mdns.value.length>24) return alert('mDNS name too long (max 24)');
+    // mdns length (support sys-mdns id)
+    const mdnsEl = document.getElementById('sys-mdns') || document.getElementById('mdns'); if(mdnsEl && mdnsEl.value && mdnsEl.value.length>24) return alert('mDNS name too long (max 24)');
     // timer format simple check
     const ts = document.getElementById('timer-start')?.value; const te = document.getElementById('timer-stop')?.value;
     const timeRE = /^\d{2}:\d{2}$/;
@@ -472,6 +543,19 @@
   document.getElementById('tool-reboot')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'reboot'}).then(()=>alert('Reboot (demo)')));
   document.getElementById('tool-format')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'format'}).then(()=>alert('Format (demo)')));
   document.getElementById('tool-reset')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'reset'}).then(()=>alert('Reset settings (demo)')));
+
+  // main toolbar actions (Update, Webboard, IR, DLNA)
+  document.getElementById('btn-update')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'fwupdate'}).then(()=>alert('FW update triggered (demo)')));
+  document.getElementById('btn-webboard')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'webboard'}).then(()=>alert('Webboard action (demo)')));
+  document.getElementById('btn-ir')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'setupir'}).then(()=>alert('Start IR setup (demo)')));
+  document.getElementById('btn-dlna')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'dlna'}).then(()=>alert('DLNA action (demo)')));
+
+  // mdns restart button
+  document.getElementById('sys-mdns-reboot')?.addEventListener('click', ()=>{
+    const v = (document.getElementById('sys-mdns')||{}).value || '';
+    if(!v) return alert('Podaj nazwę mDNS przed restartem');
+    api('/api/control','POST',{cmd:'rebootmdns',mdns:v}).then(()=> alert('Restart mDNS (demo)'));
+  });
 
   document.getElementById('tz-apply')?.addEventListener('click', ()=>{
     const h = document.getElementById('tz-hours').value; const m = document.getElementById('tz-minutes').value; api('/api/control','POST',{cmd:'tz',hours:h,minutes:m}).then(()=>alert('Timezone applied (demo)'));

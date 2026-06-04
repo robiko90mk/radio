@@ -19,8 +19,12 @@
         <option value="light">Jasny</option>
       </select>
     </div>
-    <div style="margin-left:12px">
+    <div style="margin-left:12px;display:flex;gap:8px;align-items:center">
       <button id="open-settings" class="btn">Ustawienia</button>
+      <button id="btn-update" class="btn">Update</button>
+      <button id="btn-webboard" class="btn">Board</button>
+      <button id="btn-ir" class="btn">IR</button>
+      <button id="btn-dlna" class="btn">DLNA</button>
     </div>
   </header>
 
@@ -79,6 +83,7 @@
       </nav>
 
       <div id="settings-tabs">
+        <div id="settings-form-container"></div>
         <div id="tab-system-panel" class="settings-panel">
           <h3>System / Settings</h3>
           <label>Język interfejsu<br>
@@ -92,9 +97,15 @@
           <label>Wi‑Fi Hasło<br><input id="sys-wifi-pass" type="password" style="width:100%"></label>
           <label>Strefa czasowa (offset godzin)<br><input id="sys-timezone-offset" type="number" value="1" style="width:120px" data-key="TIMEZONE_OFFSET"></label>
           <label>Pin wyciszenia<br><input id="sys-mute-pin" type="number" data-key="MUTE_PIN" style="width:120px"></label>
+          <label>Soft AP reboot delay (min)<br><input id="sys-softr" type="number" data-key="SOFTAP_REBOOT_DELAY" min="0" max="60" style="width:120px"></label>
+          <label>Audio buffer size (log2)<br><input id="sys-abuff" type="number" data-key="AUDIO_BUFFER" min="5" max="14" style="width:120px"></label>
           <label>Jasność ekranu<br><input id="sys-display-brightness" type="range" min="0" max="255" data-key="BRIGHTNESS_PIN"></label>
           <label>Wygaszacz (sekundy)<br><input id="sys-screensaver" type="number" min="0" max="3600" style="width:120px"></label>
           <label><input id="sys-vu" type="checkbox" data-key="VU_PEAK"> Wskaźnik VU (VU‑meter)</label>
+          <div style="margin-top:8px">
+            <label>mDNS name<br><input type="text" id="sys-mdns" maxlength="24" style="width:220px"></label>
+            <button id="sys-mdns-reboot" class="btn" style="margin-left:8px">Restart MDNS</button>
+          </div>
         </div>
 
         <div id="tab-playlists-panel" class="settings-panel" style="display:none">
@@ -118,6 +129,7 @@
           <h3>Ekran / Display</h3>
           <label><input id="display-flip" type="checkbox" data-key="FLIP_SCREEN"> Flip screen</label>
           <label><input id="display-invert" type="checkbox" data-key="INVERT_DISPLAY"> Invert display</label>
+          <label><input id="display-nump" type="checkbox" data-key="NUMBERED_PLAYLIST"> Numbered Playlist</label>
           <label>Brightness<br><input id="display-brightness" type="range" min="0" max="255" data-key="BRIGHTNESS_PIN"></label>
           <div style="margin-top:8px">
             <label>Screensaver timeout (sec)<br><input id="display-screensaver-time" type="number" min="0" max="65520"></label>
