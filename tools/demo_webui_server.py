@@ -153,6 +153,30 @@ async def api_playlist(request):
     except Exception:
         return web.json_response({'error': 'invalid json'}, status=400)
 
+
+async def api_check_urls(request):
+    try:
+        data = await request.json()
+        urls = data.get('urls', [])
+        results = []
+        import aiohttp
+        async with aiohttp.ClientSession() as sess:
+            for url in urls:
+                try:
+                    # try HEAD first
+                    async with sess.head(url, timeout=5) as r:
+                        ok = r.status < 400
+                except Exception:
+                    try:
+                        async with sess.get(url, timeout=5) as r:
+                            ok = r.status < 400
+                    except Exception:
+                        ok = False
+                results.append(bool(ok))
+        return web.json_response({'results': results})
+    except Exception:
+        return web.json_response({'error': 'invalid json'}, status=400)
+
 async def broadcast_state():
     data = json.dumps(state)
     to_remove = []
@@ -178,6 +202,7 @@ def main():
     app.router.add_get('/api/state', api_state)
     app.router.add_post('/api/control', api_control)
     app.router.add_put('/api/playlist', api_playlist)
+    app.router.add_post('/api/check_urls', api_check_urls)
     # serve static files
     app.router.add_static('/', str(ROOT), show_index=True)
 

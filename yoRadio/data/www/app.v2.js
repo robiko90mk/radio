@@ -56,6 +56,8 @@
     const h = document.createElement('h3'); h.textContent='Podgląd importu'; prevModal.appendChild(h);
     prevModal.appendChild(preview);
     const btns = document.createElement('div'); btns.style.marginTop='12px'; btns.style.display='flex'; btns.style.gap='8px';
+    const dedupeBtn = document.createElement('button'); dedupeBtn.className='btn'; dedupeBtn.textContent='Usuń duplikaty';
+    const checkBtn = document.createElement('button'); checkBtn.className='btn'; checkBtn.textContent='Sprawdź dostępność';
     const temp = document.createElement('button'); temp.className='btn primary'; temp.textContent='Importuj (tymczasowo)';
     const save = document.createElement('button'); save.className='btn'; save.textContent='Importuj i zapisz';
     const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent='Anuluj';
@@ -70,11 +72,51 @@
     save.addEventListener('click', ()=>{
       const data = collect(); api('/api/playlist','PUT',{playlist:data,persist:true}).then(()=>{ state.playlist=data; state.track=data[0]||state.track; render(); document.body.removeChild(prevModal); overlay.classList.remove('show'); alert('Playlist zaimportowana i zapisana'); });
     });
+    dedupeBtn.addEventListener('click', ()=>{
+      // remove duplicates by URL
+      const rows = Array.from(preview.querySelectorAll('input.preview-title'));
+      const seen = new Set();
+      const toRemove = [];
+      rows.forEach((inp, i)=>{
+        const url = parsed[i].url; if(seen.has(url)) toRemove.push(i); else seen.add(url);
+      });
+      // remove from bottom to top
+      toRemove.sort((a,b)=>b-a).forEach(i=>{ preview.children[i].remove(); parsed.splice(i,1); });
+    });
+    checkBtn.addEventListener('click', ()=>{
+      const urls = parsed.map(p=>p.url);
+      if(!urls.length) return alert('Brak URL do sprawdzenia');
+      checkBtn.disabled = true; checkBtn.textContent='Sprawdzam...';
+      api('/api/check_urls','POST',{urls}).then(res=>{
+        checkBtn.disabled=false; checkBtn.textContent='Sprawdź dostępność';
+        if(res && res.results){
+          // append status badges
+          parsed.forEach((p,idx)=>{
+            const row = preview.children[idx];
+            if(!row) return;
+            // remove previous status
+            const old = row.querySelector('.status'); if(old) old.remove();
+            const span = document.createElement('span'); span.className='status'; span.style.marginLeft='8px'; span.textContent = res.results[idx]?'OK':'NIEDOSTĘPNE'; span.style.color = res.results[idx] ? '#7ee787' : '#ff8b8b'; row.appendChild(span);
+          });
+        } else alert('Błąd podczas sprawdzania');
+      }).catch(()=>{ checkBtn.disabled=false; checkBtn.textContent='Sprawdź dostępność'; alert('Błąd sieci'); });
+    });
     cancel.addEventListener('click', ()=>{ document.body.removeChild(prevModal); overlay.classList.remove('show'); });
+    // insert dedupe and check buttons before import/save
+    btns.insertBefore(dedupeBtn, temp);
+    btns.insertBefore(checkBtn, temp);
   }
 
   // save playlist button
   document.getElementById('save-playlist')?.addEventListener('click', ()=>{ syncPlaylist().then(()=> alert('Playlist zapisana (demo)')); });
+
+  // export playlist to CSV
+  document.getElementById('export-playlist')?.addEventListener('click', ()=>{
+    const lines = (state.playlist||[]).map(it => `${(it.title||'').replace(/\t/g,' ')}\t${(it.url||'')}`);
+    const blob = new Blob([lines.join('\n')], {type:'text/tab-separated-values;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'playlist.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
 
   // EQ bands setup
   const EQ_BANDS = [60,250,1000,4000,10000];
