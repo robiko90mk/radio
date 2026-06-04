@@ -188,7 +188,36 @@ async def api_import_myoptions(request):
         if p.exists():
             try:
                 content = p.read_text(encoding='utf-8')
-                return web.json_response({'content': content})
+                # simple parser: extract selected #define values
+                import re
+                defs = dict()
+                for m in re.finditer(r"^\s*#define\s+(\w+)\s+(.+)$", content, flags=re.M):
+                    k = m.group(1).strip()
+                    v = m.group(2).strip()
+                    # cleanup trailing comments
+                    v = v.split('//')[0].strip()
+                    v = v.split('/*')[0].strip()
+                    defs[k] = v
+                # pick keys of interest and coerce types
+                keys = ['INITIAL_VOLUME','FIXED_VOLUME','L10N_LANGUAGE','PLAYER_FORCE_MONO','REMOVE_AUDIO_CONTROLS','MUTE_PIN']
+                settings = {}
+                for k in keys:
+                    if k in defs:
+                        val = defs[k]
+                        # try int
+                        try:
+                            settings[k] = int(val)
+                            continue
+                        except Exception:
+                            pass
+                        # booleans
+                        if val in ('true','false','TRUE','FALSE'):
+                            settings[k] = val.lower()=='true'
+                            continue
+                        # strip quotes
+                        settings[k] = val.strip('"')
+
+                return web.json_response({'content': content, 'settings': settings})
             except Exception:
                 return web.json_response({'error': 'read error'}, status=500)
     return web.json_response({'error': 'not found'}, status=404)

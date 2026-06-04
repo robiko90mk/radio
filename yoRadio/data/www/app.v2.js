@@ -153,8 +153,21 @@
   // import myoptions.h from project (demo)
   document.getElementById('import-from-project')?.addEventListener('click', async ()=>{
     const res = await api('/api/import_myoptions','GET');
-    if(res && res.content){ const pre = document.getElementById('imported-settings'); pre.textContent = res.content; pre.style.display='block'; alert('Plik myoptions.h pobrany (demo)'); }
-    else alert('Nie udało się pobrać ustawień z projektu');
+    if(res && res.content){
+      const pre = document.getElementById('imported-settings');
+      // show raw content and parsed settings if available
+      if(res.settings) {
+        pre.textContent = JSON.stringify(res.settings, null, 2);
+      } else {
+        pre.textContent = res.content;
+      }
+      pre.style.display='block';
+      // populate known fields into UI
+      if(res.settings && typeof res.settings.INITIAL_VOLUME !== 'undefined'){
+        try{ state.volume = parseInt(res.settings.INITIAL_VOLUME); vol.value = state.volume; }catch(e){}
+      }
+      alert('Plik myoptions.h pobrany (demo) — ustawienia zastosowane do UI');
+    } else alert('Nie udało się pobrać ustawień z projektu');
   });
 
   // EQ preset buttons
