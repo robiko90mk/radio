@@ -121,6 +121,20 @@
   // EQ bands setup
   const EQ_BANDS = [60,250,1000,4000,10000];
   const eqContainer = document.getElementById('settings-eq-sliders') || document.getElementById('eq-sliders');
+
+  // help texts for inputs (id -> tooltip)
+  const helpTexts = {
+    'sys-language': 'Język interfejsu. Ustawienie L10N_LANGUAGE w myoptions.h.',
+    'audio-initial-volume': 'Głośność startowa (0-100).',
+    'audio-fixed-volume': 'Stała głośność (0-255) - używana zamiast regulacji.',
+    'sys-mute-pin': 'Numer pinu, do którego podłączono wyciszenie (MUTE_PIN).',
+    'sys-display-brightness': 'Sterowanie jasnością ekranu (0-255).',
+    'weather-lat': 'Szerokość geograficzna (-90..90).',
+    'weather-lon': 'Długość geograficzna (-180..180).',
+    'weather-apikey': 'Klucz API OpenWeather — wymagany do pobierania pogody.',
+    'ssid0':'SSID#1 (max 30 znaków)', 'pass0':'Hasło#1 (max 40 znaków)',
+    'ssid1':'SSID#2 (max 30 znaków)', 'pass1':'Hasło#2 (max 40 znaków)'
+  };
   function buildEQ(){
     if(!eqContainer) return;
     EQ_BANDS.forEach((b,idx)=>{
@@ -217,6 +231,11 @@
       input.style.marginTop='6px'; input.style.width='100%'; row.appendChild(label); row.appendChild(input); dynContainer.appendChild(row);
     });
     settingsContainer.appendChild(dynContainer);
+    // apply help texts as title attributes
+    Object.keys(helpTexts).forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.title = helpTexts[id];
+    });
     // wire import/download JSON buttons
     document.getElementById('adv-import-json')?.addEventListener('click', ()=>{
       const txt = document.getElementById('adv-raw-settings').value;
@@ -266,6 +285,21 @@
     if(typeof payload.INITIAL_VOLUME !== 'undefined' && (payload.INITIAL_VOLUME < 0 || payload.INITIAL_VOLUME > 100)) return alert('INITIAL_VOLUME musi być 0-100');
     if(typeof payload.FIXED_VOLUME !== 'undefined' && (payload.FIXED_VOLUME < 0 || payload.FIXED_VOLUME > 255)) return alert('FIXED_VOLUME musi być 0-255');
     if(typeof payload.BRIGHTNESS_PIN !== 'undefined' && (payload.BRIGHTNESS_PIN < 0 || payload.BRIGHTNESS_PIN > 255)) return alert('BRIGHTNESS_PIN musi być 0-255');
+    // wifi fields length
+    for(let i=0;i<5;i++){ const ss = document.getElementById('ssid'+i); const pw = document.getElementById('pass'+i); if(ss && ss.value.length>30) return alert(`SSID${i} za długi (max 30)`); if(pw && pw.value.length>40) return alert(`Pass${i} za długi (max 40)`); }
+    // weather validation
+    const weatherEnabled = (document.getElementById('weather-enable') && document.getElementById('weather-enable').checked) || false;
+    const wlat = (document.getElementById('weather-lat') && parseFloat(document.getElementById('weather-lat').value)) || null;
+    const wlon = (document.getElementById('weather-lon') && parseFloat(document.getElementById('weather-lon').value)) || null;
+    const wkey = (document.getElementById('weather-apikey') && document.getElementById('weather-apikey').value) || '';
+    if(weatherEnabled){ if(wkey.trim()==='') return alert('OpenWeather API key jest wymagany, gdy pogoda jest włączona'); if(wlat!==null && (wlat<-90 || wlat>90)) return alert('Latitude musi być w zakresie -90..90'); if(wlon!==null && (wlon<-180 || wlon>180)) return alert('Longitude musi być w zakresie -180..180'); }
+    // mdns length
+    const mdns = document.getElementById('mdns'); if(mdns && mdns.value && mdns.value.length>24) return alert('mDNS name too long (max 24)');
+    // timer format simple check
+    const ts = document.getElementById('timer-start')?.value; const te = document.getElementById('timer-stop')?.value;
+    const timeRE = /^\d{2}:\d{2}$/;
+    if(ts && !timeRE.test(ts)) return alert('Start time invalid (HH:MM)');
+    if(te && !timeRE.test(te)) return alert('Stop time invalid (HH:MM)');
     // send
     api('/api/settings','POST', {settings: payload}).then(res=>{
       if(res && res.ok){ alert('Ustawienia zastosowane (demo)'); state.device_settings = payload; }
