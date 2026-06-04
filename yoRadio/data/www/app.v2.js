@@ -271,6 +271,40 @@
         if(inp.type === 'checkbox') inp.checked = (def === 'true'); else inp.value = def;
       }));
     }catch(e){}
+
+    // Reset all button
+    const resetAll = document.getElementById('customize-reset-all');
+    if(resetAll){
+      resetAll.addEventListener('click', ()=>{
+        const inputs = customizeContainer.querySelectorAll('[data-key]');
+        inputs.forEach(inp=>{
+          const key = inp.dataset.key; const btn = customizeContainer.querySelector(`button[data-key="${key}"]`);
+          if(btn){ const def = btn.dataset.default; if(inp.type === 'checkbox') inp.checked = (def === 'true'); else inp.value = def; }
+        });
+        alert('Przywrócono wartości domyślne dla wszystkich pól.');
+      });
+    }
+
+    // Save as defaults button
+    const saveDefaults = document.getElementById('customize-save-defaults');
+    if(saveDefaults){
+      saveDefaults.addEventListener('click', ()=>{
+        const inputs = customizeContainer.querySelectorAll('[data-key]');
+        const obj = {};
+        inputs.forEach(inp=>{
+          const key = inp.dataset.key; let val;
+          if(inp.type === 'checkbox') val = !!inp.checked;
+          else if(inp.type === 'number') val = (inp.value===''? null : (isNaN(Number(inp.value))? inp.value : Number(inp.value)));
+          else val = inp.value;
+          obj[key]=val;
+          const btn = customizeContainer.querySelector(`button[data-key="${key}"]`); if(btn) btn.dataset.default = String(val);
+        });
+        // update adv-raw-settings JSON if present
+        const rawEl = document.getElementById('adv-raw-settings');
+        if(rawEl){ try{ const cur = JSON.parse(rawEl.value||'{}'); Object.assign(cur,obj); rawEl.value = JSON.stringify(cur,null,2); }catch(e){ rawEl.value = JSON.stringify(obj,null,2); } }
+        alert('Zapisano bieżące wartości jako domyślne.');
+      });
+    }
     // apply help texts as title attributes
     Object.keys(helpTexts).forEach(id=>{
       const el = document.getElementById(id);
