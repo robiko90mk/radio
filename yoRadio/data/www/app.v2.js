@@ -333,25 +333,84 @@
     loadDeviceIntoHost('192.168.0.21');
 
     if(importBtn && hosted){
+      // Import device settings HTML and reconstruct native 1:1 fields in our UI
       importBtn.addEventListener('click', async ()=>{
         try{
-          // fetch proxied HTML and parse
           const r = await fetch(`/api/fetch_device_customize?host=192.168.0.21`);
           if(!r.ok) return alert('Błąd pobierania z urządzenia');
           const html = await r.text();
           const parser = new DOMParser();
           const doc = parser.parseFromString(html,'text/html');
-          const devFields = Array.from(doc.querySelectorAll('input,select,textarea'));
-          let imported=0;
-          devFields.forEach(df=>{
-            const id = df.id || df.name; if(!id) return;
-            const val = (df.type === 'checkbox') ? df.checked : df.value || df.getAttribute('value') || '';
-            let target = customizeContainer.querySelector(`[data-key="${id}"]`) || customizeContainer.querySelector(`#${id}`) || customizeContainer.querySelector(`[name="${id}"]`);
-            if(target){ if(target.type === 'checkbox') target.checked = !!val; else target.value = val; imported++; }
-            else { const row = document.createElement('div'); row.style.margin='6px 0'; const label = document.createElement('label'); label.textContent = id; label.style.fontWeight='600'; let input; if(df.type==='checkbox'){ input=document.createElement('input'); input.type='checkbox'; input.checked=!!val; } else if(df.type==='number'){ input=document.createElement('input'); input.type='number'; input.value=val; } else { input=document.createElement('input'); input.type='text'; input.value=val; } input.dataset.key=id; input.style.width='100%'; row.appendChild(label); row.appendChild(input); customizeContainer.appendChild(row); imported++; }
+
+          // Helper: find a human label for an input
+          function findLabelText(d){
+            if(!d) return '';
+            if(d.id){ const l = doc.querySelector(`label[for="${d.id}"]`); if(l && l.textContent) return l.textContent.trim(); }
+            const pl = d.closest('label'); if(pl) return pl.textContent.trim();
+            let prev = d.previousElementSibling; while(prev){ if(prev.tagName.toLowerCase()==='label') return prev.textContent.trim(); if(prev.textContent && prev.textContent.trim().length<60) return prev.textContent.trim(); prev = prev.previousElementSibling; }
+            return d.name || d.id || '';
+          }
+
+          // Build a clean container
+          customizeContainer.innerHTML = '';
+          const sections = doc.querySelectorAll('section, fieldset, form, .settings, .panel');
+          const container = document.createElement('div'); container.style.display='grid'; container.style.gap='10px';
+
+          // If no clear sections, fallback to scanning body
+          let sourceRoot = sections.length? sections[0] : doc.body;
+
+          // Collect inputs in document order
+          const inputs = Array.from(sourceRoot.querySelectorAll('input,select,textarea')).filter(i=> (i.type!=='hidden'));
+          if(inputs.length===0){ const all = Array.from(doc.querySelectorAll('input,select,textarea')).filter(i=> (i.type!=='hidden')); inputs.push(...all); }
+
+          let imported = 0;
+          inputs.forEach(el=>{
+            const id = el.id || el.name; if(!id) return;
+            const labelText = findLabelText(el) || id;
+            const row = document.createElement('div'); row.style.display='flex'; row.style.flexDirection='column'; row.style.gap='6px'; row.style.padding='6px 8px'; row.style.borderRadius='6px'; row.style.background='transparent';
+            const lbl = document.createElement('div'); lbl.textContent = labelText; lbl.style.fontWeight='600'; lbl.style.fontSize='13px';
+            let input;
+            if(el.tagName.toLowerCase()==='select'){
+              input = document.createElement('select'); input.dataset.key = id; input.style.width='100%';
+              Array.from(el.options).forEach(o=>{ const op = document.createElement('option'); op.value = o.value; op.textContent = o.textContent; if(o.selected) op.selected = true; input.appendChild(op); });
+            } else if(el.type==='checkbox'){
+              input = document.createElement('input'); input.type='checkbox'; input.dataset.key = id; input.checked = !!el.checked;
+            } else if(el.type==='radio'){
+              const groupName = el.name || id;
+              const radios = Array.from(sourceRoot.querySelectorAll(`input[type=radio][name="${groupName}"]`));
+              const radioWrap = document.createElement('div'); radioWrap.style.display='flex'; radioWrap.style.flexDirection='column';
+              radios.forEach(r=>{ const rRow = document.createElement('label'); rRow.style.display='flex'; rRow.style.alignItems='center'; const rIn = document.createElement('input'); rIn.type='radio'; rIn.name = groupName; rIn.value = r.value; if(r.checked) rIn.checked = true; rRow.appendChild(rIn); const txt = document.createElement('span'); txt.textContent = r.getAttribute('aria-label') || (r.nextSibling && r.nextSibling.textContent) || r.value; txt.style.marginLeft='8px'; rRow.appendChild(txt); radioWrap.appendChild(rRow); });
+              input = radioWrap; input.dataset = input.dataset || {}; input.dataset.key = groupName;
+            } else {
+              input = document.createElement('input'); input.type = el.type==='number'? 'number' : 'text'; input.dataset.key = id; input.value = el.value || el.getAttribute('value') || ''; input.style.width='100%';
+            }
+
+            row.appendChild(lbl);
+            row.appendChild(input);
+            container.appendChild(row);
+            imported++;
           });
-          alert('Importowano pola z urządzenia: '+imported);
-        }catch(e){ console.error(e); alert('Błąd importu: '+e.message); }
+
+          if(imported===0){ customizeContainer.innerHTML = '<div class="status">Nie znaleziono pól do zaimportowania</div>'; return; }
+          customizeContainer.appendChild(container);
+
+          // After building, wire simple Reset/Apply controls for the populated inputs
+          const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='8px'; actions.style.marginTop='10px';
+          const applyBtn = document.createElement('button'); applyBtn.className='btn primary'; applyBtn.textContent='Zastosuj 1:1 (Importowane)';
+          const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Zapisz 1:1 (demo)';
+          actions.appendChild(applyBtn); actions.appendChild(saveBtn); customizeContainer.appendChild(actions);
+
+          applyBtn.addEventListener('click', ()=>{
+            const elems = customizeContainer.querySelectorAll('[data-key]'); const out = {};
+            elems.forEach(e=>{ const k = e.dataset.key; if(!k) return; if(e.type === 'checkbox') out[k] = !!e.checked; else if(e.tagName.toLowerCase()==='select') out[k] = e.value; else if(e.type === 'number') out[k] = e.value === '' ? null : Number(e.value); else out[k] = e.value; });
+            const rawEl = document.getElementById('adv-raw-settings'); try{ const cur = JSON.parse(rawEl.value||'{}'); Object.assign(cur,out); rawEl.value = JSON.stringify(cur,null,2); }catch(e){ if(rawEl) rawEl.value = JSON.stringify(out,null,2); }
+            Object.keys(out).forEach(k=>{ const target = document.getElementById(k.toLowerCase()) || document.getElementById(k); if(target){ if(target.type==='checkbox') target.checked = !!out[k]; else target.value = out[k]; } });
+            alert('Zastosowano ustawienia 1:1 (lokalnie)');
+          });
+
+          saveBtn.addEventListener('click', ()=>{ const elems = customizeContainer.querySelectorAll('[data-key]'); const out = {}; elems.forEach(e=>{ const k=e.dataset.key; if(!k) return; if(e.type==='checkbox') out[k]=!!e.checked; else if(e.tagName.toLowerCase()==='select') out[k]=e.value; else if(e.type==='number') out[k] = e.value===''? null : Number(e.value); else out[k]=e.value; }); api('/api/settings','POST',{settings: out, persist:true}).then(res=>{ if(res && res.ok) alert('Ustawienia 1:1 zapisane (demo)'); else alert('Błąd zapisu'); }); });
+
+        }catch(err){ console.error(err); alert('Import nie powiódł się: '+err.message); }
       });
     }
     // Reset to original myoptions.h (from file)
