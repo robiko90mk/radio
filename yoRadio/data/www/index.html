@@ -19,6 +19,9 @@
         <option value="light">Jasny</option>
       </select>
     </div>
+    <div style="margin-left:12px">
+      <button id="open-settings" class="btn">Ustawienia</button>
+    </div>
   </header>
 
   <main>
@@ -57,6 +60,14 @@
     </section>
 
     <section class="extras card">
+      <h3>Wizualizer</h3>
+      <canvas id="viz" height="110"></canvas>
+    </section>
+  </main>
+
+  <section class="settings card" id="settings-section" style="display:none;grid-column:1 / -1;margin:26px">
+    <h2>Ustawienia</h2>
+    <div>
       <h3>Presety korektora</h3>
       <div class="eq-presets">
         <button data-preset="flat" class="btn">Flat</button>
@@ -65,13 +76,17 @@
         <button data-preset="pop" class="btn">Pop</button>
         <button id="save-eq" class="btn">Zapisz preset</button>
       </div>
-      <div class="eq-sliders" id="eq-sliders">
-        <!-- sliders inserted by JS: bands 60,250,1k,4k,10k -->
+      <div class="eq-sliders" id="settings-eq-sliders">
+        <!-- sliders inserted by JS -->
       </div>
-      <h3>Wizualizer</h3>
-      <canvas id="viz" height="110"></canvas>
-    </section>
-  </main>
+    </div>
+
+    <div style="margin-top:18px">
+      <h3>Import ustawień z projektu</h3>
+      <button id="import-from-project" class="btn">Importuj z projektu yoRadio</button>
+      <pre id="imported-settings" style="white-space:pre-wrap;max-height:240px;overflow:auto;margin-top:8px;display:none"></pre>
+    </div>
+  </section>
 
   <footer>
     <small>Połączono z urządzeniem: <span id="device-host">—</span></small>

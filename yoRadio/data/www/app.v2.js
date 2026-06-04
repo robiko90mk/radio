@@ -120,7 +120,7 @@
 
   // EQ bands setup
   const EQ_BANDS = [60,250,1000,4000,10000];
-  const eqContainer = document.getElementById('eq-sliders');
+  const eqContainer = document.getElementById('settings-eq-sliders') || document.getElementById('eq-sliders');
   function buildEQ(){
     if(!eqContainer) return;
     EQ_BANDS.forEach((b,idx)=>{
@@ -136,6 +136,26 @@
     }));
   }
   buildEQ();
+
+  // Settings tab toggle
+  const openSettingsBtn = document.getElementById('open-settings');
+  const settingsSection = document.getElementById('settings-section');
+  openSettingsBtn?.addEventListener('click', ()=>{
+    const m = document.querySelector('main');
+    if(!settingsSection) return;
+    if(settingsSection.style.display === 'block'){
+      settingsSection.style.display='none'; m.style.display='grid'; openSettingsBtn.textContent='Ustawienia';
+    } else {
+      settingsSection.style.display='block'; m.style.display='none'; openSettingsBtn.textContent='Powrót';
+    }
+  });
+
+  // import myoptions.h from project (demo)
+  document.getElementById('import-from-project')?.addEventListener('click', async ()=>{
+    const res = await api('/api/import_myoptions','GET');
+    if(res && res.content){ const pre = document.getElementById('imported-settings'); pre.textContent = res.content; pre.style.display='block'; alert('Plik myoptions.h pobrany (demo)'); }
+    else alert('Nie udało się pobrać ustawień z projektu');
+  });
 
   // EQ preset buttons
   document.querySelectorAll('[data-preset]').forEach(b=> b.addEventListener('click', ()=>{

@@ -177,6 +177,22 @@ async def api_check_urls(request):
     except Exception:
         return web.json_response({'error': 'invalid json'}, status=400)
 
+
+async def api_import_myoptions(request):
+    # try common locations for myoptions.h within the repo
+    candidates = [
+        Path(__file__).resolve().parents[1] / 'yoRadio' / 'myoptions.h',
+        Path(__file__).resolve().parents[1] / 'myoptions.h'
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                content = p.read_text(encoding='utf-8')
+                return web.json_response({'content': content})
+            except Exception:
+                return web.json_response({'error': 'read error'}, status=500)
+    return web.json_response({'error': 'not found'}, status=404)
+
 async def broadcast_state():
     data = json.dumps(state)
     to_remove = []
@@ -200,6 +216,7 @@ def main():
     app = web.Application()
     app.router.add_get('/ws', ws_handler)
     app.router.add_get('/api/state', api_state)
+    app.router.add_get('/api/import_myoptions', api_import_myoptions)
     app.router.add_post('/api/control', api_control)
     app.router.add_put('/api/playlist', api_playlist)
     app.router.add_post('/api/check_urls', api_check_urls)
