@@ -178,6 +178,8 @@
       return;
     }
     const parsed = res.settings || {};
+    // Keep original parsed values from myoptions.h for 'reset to original file' action
+    try{ window.customizeOriginalParsed = JSON.parse(JSON.stringify(parsed)); }catch(e){ window.customizeOriginalParsed = parsed; }
     settingsContainer.innerHTML = '';
     // mapped fields: set values for explicit structured inputs
     const map = {
@@ -303,6 +305,24 @@
         const rawEl = document.getElementById('adv-raw-settings');
         if(rawEl){ try{ const cur = JSON.parse(rawEl.value||'{}'); Object.assign(cur,obj); rawEl.value = JSON.stringify(cur,null,2); }catch(e){ rawEl.value = JSON.stringify(obj,null,2); } }
         alert('Zapisano bieżące wartości jako domyślne.');
+      });
+    }
+    // Reset to original myoptions.h (from file)
+    const resetOriginalBtn = document.getElementById('customize-reset-original');
+    if(resetOriginalBtn){
+      resetOriginalBtn.addEventListener('click', ()=>{
+        const orig = window.customizeOriginalParsed || {};
+        if(!orig || Object.keys(orig).length===0) return alert('Brak oryginalnych ustawień wczytanych z projektu');
+        const inputs = customizeContainer.querySelectorAll('[data-key]');
+        inputs.forEach(inp=>{
+          const key = inp.dataset.key; if(typeof orig[key] === 'undefined') return;
+          const val = orig[key];
+          if(inp.type === 'checkbox') inp.checked = !!val;
+          else inp.value = (val===null || typeof val === 'undefined') ? '' : String(val);
+        });
+        // update adv-raw-settings to original
+        const rawEl = document.getElementById('adv-raw-settings'); if(rawEl) rawEl.value = JSON.stringify(orig,null,2);
+        alert('Przywrócono wartości z oryginalnego myoptions.h');
       });
     }
     // apply help texts as title attributes
