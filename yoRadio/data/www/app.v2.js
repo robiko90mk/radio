@@ -231,6 +231,27 @@
       input.style.marginTop='6px'; input.style.width='100%'; row.appendChild(label); row.appendChild(input); dynContainer.appendChild(row);
     });
     settingsContainer.appendChild(dynContainer);
+    // --- Populate Customize 1:1 container (separate tab) ---
+    const customizeContainer = document.getElementById('customize-container');
+    if(customizeContainer){
+      customizeContainer.innerHTML = '';
+      const table = document.createElement('div'); table.style.display='grid'; table.style.gridTemplateColumns='1fr 1fr'; table.style.gap='8px';
+      Object.keys(parsed).sort().forEach(k=>{
+        const v = parsed[k];
+        const wrap = document.createElement('div'); wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.gap='6px';
+        const lbl = document.createElement('label'); lbl.textContent = k; lbl.style.fontWeight='600'; lbl.style.fontSize='13px';
+        let inp;
+        if(typeof v === 'boolean'){
+          inp = document.createElement('input'); inp.type='checkbox'; inp.checked = !!v; inp.dataset.key = k;
+        } else if(Number.isInteger(v) || (/^-?\d+$/.test(String(v)))){
+          inp = document.createElement('input'); inp.type='number'; inp.value = String(v); inp.dataset.key = k;
+        } else {
+          inp = document.createElement('input'); inp.type='text'; inp.value = String(v); inp.dataset.key = k;
+        }
+        inp.style.width='100%'; wrap.appendChild(lbl); wrap.appendChild(inp); table.appendChild(wrap);
+      });
+      customizeContainer.appendChild(table);
+    }
     // apply help texts as title attributes
     Object.keys(helpTexts).forEach(id=>{
       const el = document.getElementById(id);
@@ -332,7 +353,7 @@
   document.getElementById('cancel-settings')?.addEventListener('click', ()=>{ settingsSection.style.display='none'; document.querySelector('main').style.display='grid'; openSettingsBtn.textContent='Ustawienia'; });
   // tab switching
   function showTab(id){
-    ['system','playlists','audio','display','controls','timezone','wifi','weather','tools','timer','advanced'].forEach(k=>{
+    ['system','playlists','audio','display','controls','timezone','wifi','weather','tools','timer','customize','advanced'].forEach(k=>{
       const panel = document.getElementById('tab-'+k+'-panel'); if(panel) panel.style.display = (k===id? 'block':'none');
     });
   }
@@ -348,6 +369,7 @@
   document.getElementById('tab-timer')?.addEventListener('click', ()=> showTab('timer'));
   document.getElementById('tab-weather')?.addEventListener('click', ()=> showTab('weather'));
   document.getElementById('tab-advanced')?.addEventListener('click', ()=> showTab('advanced'));
+  document.getElementById('tab-customize')?.addEventListener('click', ()=> showTab('customize'));
   showTab('system');
 
   document.getElementById('goto-playlist')?.addEventListener('click', ()=>{ settingsSection.style.display='none'; document.querySelector('main').style.display='grid'; openSettingsBtn.textContent='Ustawienia'; const el = document.querySelector('.playlist'); if(el) el.scrollIntoView({behavior:'smooth'}); });

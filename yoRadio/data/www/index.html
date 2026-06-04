@@ -74,6 +74,7 @@
         <button class="btn" id="tab-display">Display</button>
         <button class="btn" id="tab-controls">Controls</button>
         <button class="btn" id="tab-weather">Pogoda</button>
+        <button class="btn" id="tab-customize">Customize</button>
         <button class="btn" id="tab-advanced">Zaawansowane</button>
       </nav>
 
@@ -206,6 +207,12 @@
             <button id="adv-download-json" class="btn">Pobierz JSON</button>
             <button id="adv-clear-json" class="btn">Wyczyść</button>
           </div>
+        </div>
+
+        <div id="tab-customize-panel" class="settings-panel" style="display:none">
+          <h3>Customize (1:1 z urządzenia)</h3>
+          <p>Wszystkie klucze z <code>myoptions.h</code> w formie edytowalnej (1:1). Pola są generowane automatycznie po wczytaniu ustawień projektu.</p>
+          <div id="customize-container" style="margin-top:8px"></div>
         </div>
       </div>
 
