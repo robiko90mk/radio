@@ -151,16 +151,16 @@
   }
   buildEQ();
 
-  // Settings drawer toggle (slide-in)
+  // Settings tab toggle
   const openSettingsBtn = document.getElementById('open-settings');
   const settingsSection = document.getElementById('settings-section');
   openSettingsBtn?.addEventListener('click', ()=>{
+    const m = document.querySelector('main');
     if(!settingsSection) return;
-    const isOpen = settingsSection.classList.contains('open');
-    if(isOpen){
-      settingsSection.classList.remove('open'); overlay.classList.remove('show'); openSettingsBtn.textContent='Ustawienia';
+    if(settingsSection.style.display === 'block'){
+      settingsSection.style.display='none'; m.style.display='grid'; openSettingsBtn.textContent='Ustawienia';
     } else {
-      settingsSection.classList.add('open'); overlay.classList.add('show'); openSettingsBtn.textContent='Powrót';
+      settingsSection.style.display='block'; m.style.display='none'; openSettingsBtn.textContent='Powrót';
       // build dynamic form each time
       buildSettingsForm();
     }
@@ -329,7 +329,7 @@
     const blob = new Blob([out],{type:'text/x-c'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='myoptions.h'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   });
 
-  document.getElementById('cancel-settings')?.addEventListener('click', ()=>{ settingsSection.classList.remove('open'); overlay.classList.remove('show'); openSettingsBtn.textContent='Ustawienia'; });
+  document.getElementById('cancel-settings')?.addEventListener('click', ()=>{ settingsSection.style.display='none'; document.querySelector('main').style.display='grid'; openSettingsBtn.textContent='Ustawienia'; });
   // tab switching
   function showTab(id){
     ['system','playlists','audio','display','controls','timezone','wifi','weather','tools','timer','advanced'].forEach(k=>{
@@ -350,7 +350,7 @@
   document.getElementById('tab-advanced')?.addEventListener('click', ()=> showTab('advanced'));
   showTab('system');
 
-  document.getElementById('goto-playlist')?.addEventListener('click', ()=>{ settingsSection.classList.remove('open'); overlay.classList.remove('show'); openSettingsBtn.textContent='Ustawienia'; const el = document.querySelector('.playlist'); if(el) el.scrollIntoView({behavior:'smooth'}); });
+  document.getElementById('goto-playlist')?.addEventListener('click', ()=>{ settingsSection.style.display='none'; document.querySelector('main').style.display='grid'; openSettingsBtn.textContent='Ustawienia'; const el = document.querySelector('.playlist'); if(el) el.scrollIntoView({behavior:'smooth'}); });
 
   document.getElementById('download-wifi-template')?.addEventListener('click', ()=>{
     const txt = 'SSID\tPASSWORD\n'; const blob = new Blob([txt], {type:'text/plain'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='wifi.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);

@@ -107,9 +107,8 @@ footer{padding:12px 24px;border-top:1px solid rgba(255,255,255,0.03);font-size:1
 }
 
 /* Settings layout fixes: prevent labels/input overlap and auto-fit content */
-/* Settings drawer: slide-in from right */
-#settings-section{position:fixed;right:0;top:0;height:100%;width:clamp(360px,42%,720px);transform:translateX(100%);transition:transform .28s ease;z-index:70;background:linear-gradient(180deg,var(--card), rgba(10,15,22,0.92));box-shadow:-20px 0 40px rgba(2,6,23,0.7);border-radius:8px 0 0 8px;padding:20px;overflow:auto}
-#settings-section.open{transform:translateX(0)}
+/* Settings layout fixes: prevent labels/input overlap and auto-fit content */
+#settings-section{display:none;grid-column:1 / -1;margin:26px auto;max-width:1100px}
 #settings-section .settings-panel{display:block}
 #settings-section .settings-panel h3{margin-top:0}
 #settings-section label{display:block;margin-bottom:10px;word-break:break-word}
@@ -118,11 +117,11 @@ footer{padding:12px 24px;border-top:1px solid rgba(255,255,255,0.03);font-size:1
 #settings-section .wifi-row{display:flex;gap:8px;align-items:center}
 #settings-section .wifi-row input{flex:1;min-width:0}
 #settings-section .settings-panel > div{margin-bottom:6px}
-#settings-section{padding-bottom:36px}
+#settings-section{overflow:auto;max-height:calc(100vh - 120px);padding:16px}
 
 /* Make checkbox labels inline but vertically aligned */
 #settings-section label input[type=checkbox]{display:inline-block;margin-right:8px;vertical-align:middle}
 
 @media(max-width:900px){
-  #settings-section{width:92%;border-radius:8px;padding:12px}
+  #settings-section{max-width:92%;margin:12px}
 }
