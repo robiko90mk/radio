@@ -137,6 +137,17 @@ async def api_playlist(request):
     try:
         data = await request.json()
         state['playlist'] = data.get('playlist', state['playlist'])
+        # persist to playlist.csv if requested
+        if data.get('persist'):
+            try:
+                outp = Path(__file__).resolve().parents[1] / 'playlist.csv'
+                with outp.open('w', encoding='utf-8', newline='') as fh:
+                    for it in state['playlist']:
+                        title = it.get('title','')
+                        url = it.get('url','')
+                        fh.write(f"{title}\t{url}\n")
+            except Exception:
+                pass
         await broadcast_state()
         return web.json_response({'ok': True})
     except Exception:

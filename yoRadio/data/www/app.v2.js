@@ -20,13 +20,13 @@
   document.getElementById('import-playlist')?.addEventListener('click', ()=>{
     const f = document.getElementById('import-file'); if(f) f.click();
   });
-  document.getElementById('import-file')?.addEventListener('change', (e)=>{
-    const file = e.target.files && e.target.files[0]; if(!file) return;
+  document.getElementById('import-file')?.addEventListener('change', (e)=>{ const file = e.target.files && e.target.files[0]; if(file) handleImportedFile(file); e.target.value=''; });
+
+  function handleImportedFile(file){
     const reader = new FileReader();
     reader.onload = ()=>{
       const txt = String(reader.result || '');
       const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
-      // detect delimiter
       const sample = lines.slice(0,5).join('\n');
       const delim = sample.indexOf('\t')>=0? '\t' : (sample.indexOf(';')>=0? ';' : ',');
       const parsed = [];
@@ -38,17 +38,40 @@
         }
       });
       if(parsed.length){
-        // replace playlist with imported
-        api('/api/playlist','PUT',{playlist: parsed}).then(r=>{
-          if(r && r.ok){ state.playlist = parsed; state.track = parsed[0]||state.track; render(); alert('Playlist zaimportowana'); }
-          else alert('Błąd importu (demo)');
-        });
+        showImportPreview(parsed);
       } else alert('Nie znaleziono poprawnych wpisów w pliku');
-      // clear file input
-      e.target.value = '';
     };
     reader.readAsText(file,'utf-8');
-  });
+  }
+
+  function showImportPreview(parsed){
+    const preview = document.createElement('div'); preview.style.maxHeight='60vh'; preview.style.overflow='auto'; preview.style.padding='6px';
+    parsed.forEach((it,idx)=>{
+      const row = document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.margin='6px 0';
+      const inp = document.createElement('input'); inp.value = it.title||''; inp.style.flex='1'; inp.dataset.idx=idx; inp.className='preview-title';
+      const url = document.createElement('div'); url.textContent = it.url; url.style.color='var(--muted)'; url.style.fontSize='12px'; url.style.minWidth='180px'; url.style.overflow='hidden'; url.style.textOverflow='ellipsis';
+      row.appendChild(inp); row.appendChild(url); preview.appendChild(row);
+    });
+    const prevModal = document.createElement('div'); prevModal.className='modal show';
+    const h = document.createElement('h3'); h.textContent='Podgląd importu'; prevModal.appendChild(h);
+    prevModal.appendChild(preview);
+    const btns = document.createElement('div'); btns.style.marginTop='12px'; btns.style.display='flex'; btns.style.gap='8px';
+    const temp = document.createElement('button'); temp.className='btn primary'; temp.textContent='Importuj (tymczasowo)';
+    const save = document.createElement('button'); save.className='btn'; save.textContent='Importuj i zapisz';
+    const cancel = document.createElement('button'); cancel.className='btn'; cancel.textContent='Anuluj';
+    btns.appendChild(temp); btns.appendChild(save); btns.appendChild(cancel); prevModal.appendChild(btns);
+    document.body.appendChild(prevModal);
+    overlay.classList.add('show');
+
+    function collect(){ return Array.from(preview.querySelectorAll('input.preview-title')).map((i,idx)=>({title:i.value||parsed[idx].url,url:parsed[idx].url})); }
+    temp.addEventListener('click', ()=>{
+      const data = collect(); api('/api/playlist','PUT',{playlist:data}).then(()=>{ state.playlist=data; state.track=data[0]||state.track; render(); document.body.removeChild(prevModal); overlay.classList.remove('show'); alert('Playlist zaimportowana tymczasowo'); });
+    });
+    save.addEventListener('click', ()=>{
+      const data = collect(); api('/api/playlist','PUT',{playlist:data,persist:true}).then(()=>{ state.playlist=data; state.track=data[0]||state.track; render(); document.body.removeChild(prevModal); overlay.classList.remove('show'); alert('Playlist zaimportowana i zapisana'); });
+    });
+    cancel.addEventListener('click', ()=>{ document.body.removeChild(prevModal); overlay.classList.remove('show'); });
+  }
 
   // save playlist button
   document.getElementById('save-playlist')?.addEventListener('click', ()=>{ syncPlaylist().then(()=> alert('Playlist zapisana (demo)')); });
@@ -123,11 +146,22 @@
     const list = document.createElement('div'); list.className='list';
     (state.playlist||[]).forEach((it,idx)=>{
       const li=document.createElement('li');
-      li.innerHTML = `<div class="info"><div class="t">${escapeHtml(it.title||it.url)}</div><div class="s">${escapeHtml(it.url)}</div></div><div class="actions"><button class="btn" data-idx="${idx}">Odtwórz</button></div>`;
+      const title = it.title && it.title !== it.url ? it.title : (it.title || it.url);
+      const urlDisplay = it.url && it.url!==title ? it.url : '';
+      li.innerHTML = `<div class="info"><div class="t">${escapeHtml(title)}</div>${urlDisplay?`<div class="s">${escapeHtml(urlDisplay)}</div>`:''}</div><div class="actions"><button class="btn" data-idx="${idx}">Odtwórz</button></div>`;
       list.appendChild(li);
     });
     playlistEl.innerHTML=''; playlistEl.appendChild(list);
     playlistEl.querySelectorAll('.actions button').forEach(b=> b.addEventListener('click', (e)=>{ const i=parseInt(e.target.dataset.idx); api('/api/control','POST',{cmd:'play_index',index:i}); }));
+
+    // enable drag & drop import on playlist card
+    playlistEl.addEventListener('dragover', (ev)=>{ ev.preventDefault(); playlistEl.classList.add('dragover'); });
+    playlistEl.addEventListener('dragleave', (ev)=>{ playlistEl.classList.remove('dragover'); });
+    playlistEl.addEventListener('drop', (ev)=>{
+      ev.preventDefault(); playlistEl.classList.remove('dragover');
+      const f = ev.dataTransfer.files && ev.dataTransfer.files[0];
+      if(f) handleImportedFile(f);
+    });
   }
 
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
