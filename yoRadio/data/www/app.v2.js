@@ -16,6 +16,43 @@
   document.getElementById('addCancel')?.addEventListener('click', ()=>{ overlay.classList.remove('show'); modal.classList.remove('show'); });
   document.getElementById('addConfirm')?.addEventListener('click', ()=>{ const v=document.getElementById('newurl').value.trim(); if(v){ state.playlist.push({title:v,url:v}); syncPlaylist(); overlay.classList.remove('show'); modal.classList.remove('show'); render(); }});
 
+  // import playlist from CSV file (client-side)
+  document.getElementById('import-playlist')?.addEventListener('click', ()=>{
+    const f = document.getElementById('import-file'); if(f) f.click();
+  });
+  document.getElementById('import-file')?.addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const txt = String(reader.result || '');
+      const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+      // detect delimiter
+      const sample = lines.slice(0,5).join('\n');
+      const delim = sample.indexOf('\t')>=0? '\t' : (sample.indexOf(';')>=0? ';' : ',');
+      const parsed = [];
+      lines.forEach(row=>{
+        const parts = row.split(delim).map(p=>p.trim());
+        if(parts.length>=2){
+          const title = parts[0]; const url = parts[1];
+          if(url && /^https?:\/\//.test(url)) parsed.push({title: title || url, url});
+        }
+      });
+      if(parsed.length){
+        // replace playlist with imported
+        api('/api/playlist','PUT',{playlist: parsed}).then(r=>{
+          if(r && r.ok){ state.playlist = parsed; state.track = parsed[0]||state.track; render(); alert('Playlist zaimportowana'); }
+          else alert('Błąd importu (demo)');
+        });
+      } else alert('Nie znaleziono poprawnych wpisów w pliku');
+      // clear file input
+      e.target.value = '';
+    };
+    reader.readAsText(file,'utf-8');
+  });
+
+  // save playlist button
+  document.getElementById('save-playlist')?.addEventListener('click', ()=>{ syncPlaylist().then(()=> alert('Playlist zapisana (demo)')); });
+
   // EQ bands setup
   const EQ_BANDS = [60,250,1000,4000,10000];
   const eqContainer = document.getElementById('eq-sliders');
