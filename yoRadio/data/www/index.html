@@ -68,23 +68,59 @@
   <section class="settings card" id="settings-section" style="display:none;grid-column:1 / -1;margin:26px">
     <h2>Ustawienia</h2>
     <div>
-      <h3>Presety korektora</h3>
-      <div class="eq-presets">
-        <button data-preset="flat" class="btn">Flat</button>
-        <button data-preset="rock" class="btn">Rock</button>
-        <button data-preset="jazz" class="btn">Jazz</button>
-        <button data-preset="pop" class="btn">Pop</button>
-        <button id="save-eq" class="btn">Zapisz preset</button>
+      <form id="settings-form">
+        <div style="display:flex;gap:18px;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px">
+            <label>Język interfejsu<br>
+              <select id="s-lang">
+                <option value="PL">Polski</option>
+                <option value="EN">English</option>
+                <option value="DE">Deutsch</option>
+              </select>
+            </label>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <label>Głośność początkowa<br>
+              <input id="s-initial-volume" type="number" min="0" max="100">
+            </label>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <label><input id="s-force-mono" type="checkbox"> Wymuś mono</label><br>
+            <label><input id="s-remove-audio-controls" type="checkbox"> Usuń kontrolki audio</label>
+          </div>
+          <div style="flex:1;min-width:220px">
+            <label>Stała głośność (0-255)<br>
+              <input id="s-fixed-volume" type="number" min="0" max="255">
+            </label>
+            <label>Pin wyciszenia<br>
+              <input id="s-mute-pin" type="number" min="0" max="255">
+            </label>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button id="apply-settings" class="btn primary" type="button">Zastosuj</button>
+          <button id="save-settings" class="btn" type="button">Zapisz (demo)</button>
+          <button id="cancel-settings" class="btn" type="button">Anuluj</button>
+        </div>
+      </form>
+      <div style="margin-top:18px">
+        <h3>Presety korektora</h3>
+        <div class="eq-presets">
+          <button data-preset="flat" class="btn">Flat</button>
+          <button data-preset="rock" class="btn">Rock</button>
+          <button data-preset="jazz" class="btn">Jazz</button>
+          <button data-preset="pop" class="btn">Pop</button>
+          <button id="save-eq" class="btn">Zapisz preset</button>
+        </div>
+        <div class="eq-sliders" id="settings-eq-sliders">
+          <!-- sliders inserted by JS -->
+        </div>
       </div>
-      <div class="eq-sliders" id="settings-eq-sliders">
-        <!-- sliders inserted by JS -->
+      <div style="margin-top:18px">
+        <h3>Import ustawień z projektu (podgląd)</h3>
+        <button id="import-from-project" class="btn">Pobierz myoptions.h</button>
+        <pre id="imported-settings" style="white-space:pre-wrap;max-height:240px;overflow:auto;margin-top:8px;display:none"></pre>
       </div>
-    </div>
-
-    <div style="margin-top:18px">
-      <h3>Import ustawień z projektu</h3>
-      <button id="import-from-project" class="btn">Importuj z projektu yoRadio</button>
-      <pre id="imported-settings" style="white-space:pre-wrap;max-height:240px;overflow:auto;margin-top:8px;display:none"></pre>
     </div>
   </section>
 

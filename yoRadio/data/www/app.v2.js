@@ -170,6 +170,66 @@
     } else alert('Nie udało się pobrać ustawień z projektu');
   });
 
+  // settings form handlers
+  const sLang = document.getElementById('s-lang');
+  const sInitial = document.getElementById('s-initial-volume');
+  const sForceMono = document.getElementById('s-force-mono');
+  const sRemoveAudio = document.getElementById('s-remove-audio-controls');
+  const sFixed = document.getElementById('s-fixed-volume');
+  const sMute = document.getElementById('s-mute-pin');
+
+  function populateSettingsForm(parsed){
+    if(!parsed) return;
+    if(parsed.L10N_LANGUAGE) sLang.value = parsed.L10N_LANGUAGE;
+    if(typeof parsed.INITIAL_VOLUME !== 'undefined') sInitial.value = parsed.INITIAL_VOLUME;
+    if(typeof parsed.FIXED_VOLUME !== 'undefined') sFixed.value = parsed.FIXED_VOLUME;
+    if(typeof parsed.MUTE_PIN !== 'undefined') sMute.value = parsed.MUTE_PIN;
+    if(typeof parsed.PLAYER_FORCE_MONO !== 'undefined') sForceMono.checked = parsed.PLAYER_FORCE_MONO;
+    if(typeof parsed.REMOVE_AUDIO_CONTROLS !== 'undefined') sRemoveAudio.checked = parsed.REMOVE_AUDIO_CONTROLS;
+  }
+
+  // when import finishes, also populate form
+  const origImportHandler = document.getElementById('import-from-project')?.onclick;
+  // override click logic earlier already attached — instead call API and populate
+  document.getElementById('import-from-project')?.addEventListener('click', async ()=>{
+    const res = await api('/api/import_myoptions','GET');
+    if(res && res.settings){
+      const pre = document.getElementById('imported-settings'); pre.textContent = JSON.stringify(res.settings, null, 2); pre.style.display='block';
+      populateSettingsForm(res.settings);
+      alert('Ustawienia z projektu załadowane do formularza (demo)');
+    } else if(res && res.content){ document.getElementById('imported-settings').textContent = res.content; document.getElementById('imported-settings').style.display='block'; }
+    else alert('Nie udało się pobrać ustawień z projektu');
+  });
+
+  document.getElementById('apply-settings')?.addEventListener('click', ()=>{
+    const payload = {
+      L10N_LANGUAGE: sLang.value,
+      INITIAL_VOLUME: parseInt(sInitial.value||0),
+      FIXED_VOLUME: parseInt(sFixed.value||0),
+      MUTE_PIN: parseInt(sMute.value||0),
+      PLAYER_FORCE_MONO: !!sForceMono.checked,
+      REMOVE_AUDIO_CONTROLS: !!sRemoveAudio.checked
+    };
+    api('/api/settings','POST', {settings: payload}).then(res=>{
+      if(res && res.ok){ alert('Ustawienia zastosowane (demo)'); state.device_settings = payload; }
+      else alert('Błąd przy zastosowaniu ustawień');
+    });
+  });
+
+  document.getElementById('save-settings')?.addEventListener('click', ()=>{
+    const payload = { settings: {
+      L10N_LANGUAGE: sLang.value,
+      INITIAL_VOLUME: parseInt(sInitial.value||0),
+      FIXED_VOLUME: parseInt(sFixed.value||0),
+      MUTE_PIN: parseInt(sMute.value||0),
+      PLAYER_FORCE_MONO: !!sForceMono.checked,
+      REMOVE_AUDIO_CONTROLS: !!sRemoveAudio.checked
+    }, persist: true };
+    api('/api/settings','POST', payload).then(res=>{ if(res && res.ok) alert('Ustawienia zapisane (demo)'); else alert('Błąd zapisu'); });
+  });
+
+  document.getElementById('cancel-settings')?.addEventListener('click', ()=>{ settingsSection.style.display='none'; document.querySelector('main').style.display='grid'; openSettingsBtn.textContent='Ustawienia'; });
+
   // EQ preset buttons
   document.querySelectorAll('[data-preset]').forEach(b=> b.addEventListener('click', ()=>{
     const p = b.dataset.preset;

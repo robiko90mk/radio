@@ -222,6 +222,27 @@ async def api_import_myoptions(request):
                 return web.json_response({'error': 'read error'}, status=500)
     return web.json_response({'error': 'not found'}, status=404)
 
+
+async def api_settings(request):
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({'error': 'invalid json'}, status=400)
+    # store into state for demo purposes
+    settings = data.get('settings')
+    if settings:
+        state['device_settings'] = settings
+    # optionally persist? only demo: do not overwrite project files automatically
+    if data.get('persist'):
+        # For safety, just acknowledge — real implementation would validate and write.
+        try:
+            # attempt to write a small settings.json next to server for demo
+            outp = Path(__file__).resolve().parents[1] / 'yoRadio' / 'data' / 'myoptions_preview.json'
+            outp.write_text(json.dumps(settings or {}, indent=2), encoding='utf-8')
+        except Exception:
+            pass
+    return web.json_response({'ok': True})
+
 async def broadcast_state():
     data = json.dumps(state)
     to_remove = []
@@ -247,6 +268,7 @@ def main():
     app.router.add_get('/api/state', api_state)
     app.router.add_get('/api/import_myoptions', api_import_myoptions)
     app.router.add_post('/api/control', api_control)
+    app.router.add_post('/api/settings', api_settings)
     app.router.add_put('/api/playlist', api_playlist)
     app.router.add_post('/api/check_urls', api_check_urls)
     # serve static files
