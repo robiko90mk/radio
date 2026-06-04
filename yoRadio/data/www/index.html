@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>yoRadio — Remote</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#222">
+</head>
+<body>
+  <header>
+    <h1>yoRadio</h1>
+    <div class="status" id="ws-status">WS: disconnected</div>
+    <div class="theme-toggle">
+      <label>Theme</label>
+      <select id="theme-select">
+        <option value="auto">Auto</option>
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <section class="now-playing">
+      <div class="cover" id="cover"></div>
+      <div class="meta">
+        <div id="title">—</div>
+        <div id="artist">—</div>
+        <div id="stream">—</div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <button id="prev">⏮</button>
+      <button id="play">⏵</button>
+      <button id="next">⏭</button>
+      <label>Vol <input id="volume" type="range" min="0" max="100"></label>
+    </section>
+
+    <section class="playlist">
+      <h2>Playlist</h2>
+      <ul id="playlist" class="list" draggable="true"></ul>
+      <div class="playlist-actions">
+        <button id="add-url">Add URL</button>
+        <button id="save-playlist">Save</button>
+      </div>
+    </section>
+
+    <section class="extras">
+      <h3>EQ Presets</h3>
+      <div class="eq-presets">
+        <button data-preset="flat">Flat</button>
+        <button data-preset="rock">Rock</button>
+        <button data-preset="jazz">Jazz</button>
+        <button data-preset="pop">Pop</button>
+      </div>
+      <h3>Visualizer</h3>
+      <canvas id="viz" height="80"></canvas>
+    </section>
+  </main>
+
+  <footer>
+    <small>Connected to device: <span id="device-host">—</span></small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
