@@ -147,69 +147,60 @@
       settingsSection.style.display='none'; m.style.display='grid'; openSettingsBtn.textContent='Ustawienia';
     } else {
       settingsSection.style.display='block'; m.style.display='none'; openSettingsBtn.textContent='Powrót';
+      // build dynamic form each time
+      buildSettingsForm();
     }
   });
 
-  // import myoptions.h from project (demo)
-  document.getElementById('import-from-project')?.addEventListener('click', async ()=>{
+  // dynamic settings form will be built on settings open
+
+  // build dynamic settings form from myoptions.h on settings open
+  const settingsContainer = document.getElementById('settings-form-container');
+  async function buildSettingsForm(){
+    settingsContainer.innerHTML = '<div class="status">Ładowanie ustawień projektu...</div>';
     const res = await api('/api/import_myoptions','GET');
-    if(res && res.content){
-      const pre = document.getElementById('imported-settings');
-      // show raw content and parsed settings if available
-      if(res.settings) {
-        pre.textContent = JSON.stringify(res.settings, null, 2);
+    if(!res || (!res.settings && !res.content)){
+      settingsContainer.innerHTML = '<div class="status">Nie znaleziono myoptions.h w projekcie.</div>';
+      return;
+    }
+    const parsed = res.settings || {};
+    settingsContainer.innerHTML = '';
+    // sort keys to show important ones first
+    const preferred = ['L10N_LANGUAGE','INITIAL_VOLUME','FIXED_VOLUME','PLAYER_FORCE_MONO','REMOVE_AUDIO_CONTROLS','MUTE_PIN'];
+    const keys = Object.keys(parsed).sort((a,b)=>{ const ia=preferred.indexOf(a), ib=preferred.indexOf(b); if(ia!==-1||ib!==-1) return (ia===-1?1:ia) - (ib===-1?1:ib); return a.localeCompare(b); });
+    keys.forEach(k=>{
+      const v = parsed[k];
+      const row = document.createElement('div'); row.style.margin='6px 0';
+      const label = document.createElement('label'); label.style.display='block'; label.style.fontWeight='600'; label.textContent = k;
+      let input;
+      if(typeof v === 'boolean'){
+        input = document.createElement('input'); input.type='checkbox'; input.checked = v; input.dataset.key=k;
+      } else if(Number.isInteger(v) || (/^-?\d+$/.test(String(v)))){
+        input = document.createElement('input'); input.type='number'; input.value = String(v); input.dataset.key=k;
       } else {
-        pre.textContent = res.content;
+        input = document.createElement('input'); input.type='text'; input.value = String(v); input.dataset.key=k;
       }
-      pre.style.display='block';
-      // populate known fields into UI
-      if(res.settings && typeof res.settings.INITIAL_VOLUME !== 'undefined'){
-        try{ state.volume = parseInt(res.settings.INITIAL_VOLUME); vol.value = state.volume; }catch(e){}
-      }
-      alert('Plik myoptions.h pobrany (demo) — ustawienia zastosowane do UI');
-    } else alert('Nie udało się pobrać ustawień z projektu');
-  });
-
-  // settings form handlers
-  const sLang = document.getElementById('s-lang');
-  const sInitial = document.getElementById('s-initial-volume');
-  const sForceMono = document.getElementById('s-force-mono');
-  const sRemoveAudio = document.getElementById('s-remove-audio-controls');
-  const sFixed = document.getElementById('s-fixed-volume');
-  const sMute = document.getElementById('s-mute-pin');
-
-  function populateSettingsForm(parsed){
-    if(!parsed) return;
-    if(parsed.L10N_LANGUAGE) sLang.value = parsed.L10N_LANGUAGE;
-    if(typeof parsed.INITIAL_VOLUME !== 'undefined') sInitial.value = parsed.INITIAL_VOLUME;
-    if(typeof parsed.FIXED_VOLUME !== 'undefined') sFixed.value = parsed.FIXED_VOLUME;
-    if(typeof parsed.MUTE_PIN !== 'undefined') sMute.value = parsed.MUTE_PIN;
-    if(typeof parsed.PLAYER_FORCE_MONO !== 'undefined') sForceMono.checked = parsed.PLAYER_FORCE_MONO;
-    if(typeof parsed.REMOVE_AUDIO_CONTROLS !== 'undefined') sRemoveAudio.checked = parsed.REMOVE_AUDIO_CONTROLS;
+      input.style.marginTop='6px'; input.style.width='100%';
+      row.appendChild(label); row.appendChild(input); settingsContainer.appendChild(row);
+    });
+    // allow applying directly from built form
   }
 
-  // when import finishes, also populate form
-  const origImportHandler = document.getElementById('import-from-project')?.onclick;
-  // override click logic earlier already attached — instead call API and populate
-  document.getElementById('import-from-project')?.addEventListener('click', async ()=>{
-    const res = await api('/api/import_myoptions','GET');
-    if(res && res.settings){
-      const pre = document.getElementById('imported-settings'); pre.textContent = JSON.stringify(res.settings, null, 2); pre.style.display='block';
-      populateSettingsForm(res.settings);
-      alert('Ustawienia z projektu załadowane do formularza (demo)');
-    } else if(res && res.content){ document.getElementById('imported-settings').textContent = res.content; document.getElementById('imported-settings').style.display='block'; }
-    else alert('Nie udało się pobrać ustawień z projektu');
-  });
+  function collectSettingsFromContainer(){
+    const inputs = Array.from(settingsContainer.querySelectorAll('input'));
+    const out = {};
+    inputs.forEach(inp=>{
+      const key = inp.dataset.key;
+      if(!key) return;
+      if(inp.type === 'checkbox') out[key] = !!inp.checked;
+      else if(inp.type === 'number') out[key] = parseInt(inp.value||0);
+      else out[key] = inp.value;
+    });
+    return out;
+  }
 
   document.getElementById('apply-settings')?.addEventListener('click', ()=>{
-    const payload = {
-      L10N_LANGUAGE: sLang.value,
-      INITIAL_VOLUME: parseInt(sInitial.value||0),
-      FIXED_VOLUME: parseInt(sFixed.value||0),
-      MUTE_PIN: parseInt(sMute.value||0),
-      PLAYER_FORCE_MONO: !!sForceMono.checked,
-      REMOVE_AUDIO_CONTROLS: !!sRemoveAudio.checked
-    };
+    const payload = collectSettingsFromContainer();
     api('/api/settings','POST', {settings: payload}).then(res=>{
       if(res && res.ok){ alert('Ustawienia zastosowane (demo)'); state.device_settings = payload; }
       else alert('Błąd przy zastosowaniu ustawień');
@@ -217,14 +208,7 @@
   });
 
   document.getElementById('save-settings')?.addEventListener('click', ()=>{
-    const payload = { settings: {
-      L10N_LANGUAGE: sLang.value,
-      INITIAL_VOLUME: parseInt(sInitial.value||0),
-      FIXED_VOLUME: parseInt(sFixed.value||0),
-      MUTE_PIN: parseInt(sMute.value||0),
-      PLAYER_FORCE_MONO: !!sForceMono.checked,
-      REMOVE_AUDIO_CONTROLS: !!sRemoveAudio.checked
-    }, persist: true };
+    const payload = { settings: collectSettingsFromContainer(), persist: true };
     api('/api/settings','POST', payload).then(res=>{ if(res && res.ok) alert('Ustawienia zapisane (demo)'); else alert('Błąd zapisu'); });
   });
 
