@@ -46,6 +46,13 @@ main{display:grid;grid-template-columns:360px 1fr 380px;gap:26px;padding:26px;ma
 
 canvas#viz{width:100%;height:110px;border-radius:8px;background:linear-gradient(180deg, rgba(58,160,255,0.04), rgba(0,0,0,0.06));display:block}
 
+.eq-sliders{display:flex;gap:12px;margin-top:12px}
+.eq-band{display:flex;flex-direction:column;align-items:center;width:1fr;max-width:120px}
+.eq-band input[type=range]{transform:rotate(-90deg);width:120px;height:28px}
+.eq-band .label{font-size:12px;color:var(--muted);margin-top:8px}
+.btn{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--fg);cursor:pointer}
+.btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;color:#022}
+
 footer{padding:12px 24px;border-top:1px solid rgba(255,255,255,0.03);font-size:13px;color:var(--muted);max-width:1280px;margin:8px auto}
 
 @media(max-width:1100px){main{grid-template-columns:1fr;padding:12px}}

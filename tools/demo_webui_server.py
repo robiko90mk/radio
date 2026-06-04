@@ -22,6 +22,7 @@ state = {
         {'title': 'Internet Radio 1', 'url': 'http://stream.example/1'},
         {'title': 'Podcast Episode 2', 'url': 'http://pod.example/ep2.mp3'},
     ],
+    'eq': { '60':0, '250':0, '1000':0, '4000':0, '10000':0 }
 }
 
 WS_CLIENTS = set()
@@ -39,6 +40,22 @@ async def ws_handler(request):
                     # simple echo update
                     if data.get('cmd') == 'volume':
                         state['volume'] = int(data.get('value', state['volume']))
+                        await broadcast_state()
+            
+            
+            
+                    if data.get('cmd') == 'eq_set':
+                        band = str(data.get('band'))
+                        val = float(data.get('value',0))
+                        state['eq'][band] = val
+                        await broadcast_state()
+                    if data.get('cmd') == 'eq_preset':
+                        vals = data.get('values', {})
+                        for k,v in vals.items(): state['eq'][str(k)] = float(v)
+                        await broadcast_state()
+                    if data.get('cmd') == 'eq_save':
+                        # demo: do nothing persistent
+                        await broadcast_state()
                         await broadcast_state()
                 except Exception:
                     pass

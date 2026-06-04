@@ -16,6 +16,47 @@
   document.getElementById('addCancel')?.addEventListener('click', ()=>{ overlay.classList.remove('show'); modal.classList.remove('show'); });
   document.getElementById('addConfirm')?.addEventListener('click', ()=>{ const v=document.getElementById('newurl').value.trim(); if(v){ state.playlist.push({title:v,url:v}); syncPlaylist(); overlay.classList.remove('show'); modal.classList.remove('show'); render(); }});
 
+  // EQ bands setup
+  const EQ_BANDS = [60,250,1000,4000,10000];
+  const eqContainer = document.getElementById('eq-sliders');
+  function buildEQ(){
+    if(!eqContainer) return;
+    EQ_BANDS.forEach((b,idx)=>{
+      const div=document.createElement('div'); div.className='eq-band';
+      div.innerHTML = `<input type="range" min="-12" max="12" value="0" step="0.5" data-band="${b}" id="eq-${idx}"><div class="label">${b}Hz</div>`;
+      eqContainer.appendChild(div);
+    });
+    // wire events
+    eqContainer.querySelectorAll('input[type=range]').forEach(r=> r.addEventListener('input', (e)=>{
+      const band = parseInt(e.target.dataset.band); const val = parseFloat(e.target.value);
+      state.eq = state.eq || {}; state.eq[band]=val;
+      api('/api/control','POST',{cmd:'eq_set',band:band,value:val});
+    }));
+  }
+  buildEQ();
+
+  // EQ preset buttons
+  document.querySelectorAll('[data-preset]').forEach(b=> b.addEventListener('click', ()=>{
+    const p = b.dataset.preset;
+    // example presets
+    const presets = {
+      flat: {60:0,250:0,1000:0,4000:0,10000:0},
+      rock: {60:3,250:2,1000:-1,4000:2,10000:3},
+      jazz: {60:0,250:1,1000:2,4000:1,10000:0},
+      pop: {60:2,250:1,1000:0,4000:1,10000:2}
+    };
+    const preset = presets[p]||presets.flat;
+    state.eq = preset;
+    // update sliders
+    EQ_BANDS.forEach((band,idx)=>{ const el=document.getElementById('eq-'+idx); if(el) el.value = preset[band]; });
+    api('/api/control','POST',{cmd:'eq_preset',preset:p,values:preset});
+  }));
+
+  document.getElementById('save-eq')?.addEventListener('click', ()=>{
+    const name = prompt('Preset name'); if(!name) return;
+    api('/api/control','POST',{cmd:'eq_save',name:name,values:state.eq||{}}).then(()=> alert('Preset saved (demo)'));
+  });
+
   let ws; let state = {playing:false,volume:50,track:{title:'—',artist:'—',stream:'—'},playlist:[]};
   function setWS(s){ wsStatus.textContent = 'WS: '+s; }
 
