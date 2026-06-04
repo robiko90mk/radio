@@ -78,12 +78,20 @@
       <div id="settings-tabs">
         <div id="tab-system-panel" class="settings-panel">
           <h3>System / Settings</h3>
+          <label>Język interfejsu<br>
+            <select id="sys-language" data-key="L10N_LANGUAGE">
+              <option value="PL">Polski</option>
+              <option value="EN">English</option>
+              <option value="DE">Deutsch</option>
+            </select>
+          </label>
           <label>Wi‑Fi SSID<br><input id="sys-wifi-ssid" type="text" style="width:100%"></label>
           <label>Wi‑Fi Hasło<br><input id="sys-wifi-pass" type="password" style="width:100%"></label>
-          <label>Strefa czasowa (offset godzin)<br><input id="sys-timezone-offset" type="number" value="1" style="width:120px"></label>
-          <label>Jasność ekranu<br><input id="sys-display-brightness" type="range" min="0" max="255"></label>
+          <label>Strefa czasowa (offset godzin)<br><input id="sys-timezone-offset" type="number" value="1" style="width:120px" data-key="TIMEZONE_OFFSET"></label>
+          <label>Pin wyciszenia<br><input id="sys-mute-pin" type="number" data-key="MUTE_PIN" style="width:120px"></label>
+          <label>Jasność ekranu<br><input id="sys-display-brightness" type="range" min="0" max="255" data-key="BRIGHTNESS_PIN"></label>
           <label>Wygaszacz (sekundy)<br><input id="sys-screensaver" type="number" min="0" max="3600" style="width:120px"></label>
-          <label><input id="sys-vu" type="checkbox"> Wskaźnik VU (VU‑meter)</label>
+          <label><input id="sys-vu" type="checkbox" data-key="VU_PEAK"> Wskaźnik VU (VU‑meter)</label>
         </div>
 
         <div id="tab-playlists-panel" class="settings-panel" style="display:none">
@@ -94,11 +102,13 @@
 
         <div id="tab-audio-panel" class="settings-panel" style="display:none">
           <h3>Opcje Audio</h3>
-          <label>Głośność początkowa<br><input id="audio-initial-volume" type="number" min="0" max="100"></label>
-          <label>Bas<br><input id="audio-bass" type="range" min="-12" max="12"></label>
-          <label>Treble<br><input id="audio-treble" type="range" min="-12" max="12"></label>
-          <label>Balance<br><input id="audio-balance" type="range" min="-50" max="50"></label>
-          <label><input id="audio-force-mono" type="checkbox"> Wymuś mono</label>
+          <label>Głośność początkowa<br><input id="audio-initial-volume" type="number" min="0" max="100" data-key="INITIAL_VOLUME"></label>
+          <label>Stała głośność (0-255)<br><input id="audio-fixed-volume" type="number" min="0" max="255" data-key="FIXED_VOLUME"></label>
+          <label>Bas<br><input id="audio-bass" type="range" min="-12" max="12" data-key="EQ_BASS"></label>
+          <label>Treble<br><input id="audio-treble" type="range" min="-12" max="12" data-key="EQ_TREBLE"></label>
+          <label>Balance<br><input id="audio-balance" type="range" min="-50" max="50" data-key="BALANCE"></label>
+          <label><input id="audio-force-mono" type="checkbox" data-key="PLAYER_FORCE_MONO"> Wymuś mono</label>
+          <label><input id="audio-remove-audio-controls" type="checkbox" data-key="REMOVE_AUDIO_CONTROLS"> Usuń kontrolki audio</label>
         </div>
 
         <div id="tab-weather-panel" class="settings-panel" style="display:none">
@@ -123,6 +133,15 @@
           <div style="margin-top:12px">
             <button id="download-wifi-template" class="btn">Pobierz szablon Wi‑Fi (wifi.csv)</button>
             <small style="display:block;color:var(--muted);margin-top:6px">Edytuj `data/data/wifi.csv` (SSID[TAB]PASSWORD) przed instalacją.</small>
+          </div>
+          <hr style="margin:12px 0">
+          <h4>Surowe ustawienia projektu</h4>
+          <p>Możesz zobaczyć i edytować wszystkie zdefiniowane wartości z <code>myoptions.h</code>. Zmiany zostaną przesłane jako JSON do demo serwera.</p>
+          <textarea id="adv-raw-settings" style="width:100%;height:220px;font-family:monospace;margin-top:8px"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="adv-import-json" class="btn">Importuj JSON do pól</button>
+            <button id="adv-download-json" class="btn">Pobierz JSON</button>
+            <button id="adv-clear-json" class="btn">Wyczyść</button>
           </div>
         </div>
       </div>

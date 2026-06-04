@@ -165,16 +165,64 @@
     }
     const parsed = res.settings || {};
     settingsContainer.innerHTML = '';
-    // populate structured fields from parsed values
-    try{
-      if(parsed.L10N_LANGUAGE) document.getElementById('tab-system-panel') && (document.getElementById('sys-timezone-offset').value = parsed.L10N_LANGUAGE);
-    }catch(e){}
-    if(typeof parsed.INITIAL_VOLUME !== 'undefined') document.getElementById('audio-initial-volume').value = parsed.INITIAL_VOLUME;
-    if(typeof parsed.FIXED_VOLUME !== 'undefined') document.getElementById('audio-initial-volume').value = parsed.FIXED_VOLUME;
-    if(typeof parsed.MUTE_PIN !== 'undefined') document.getElementById('sys-display-brightness') && (document.getElementById('sys-display-brightness').value = parsed.MUTE_PIN);
-    if(typeof parsed.PLAYER_FORCE_MONO !== 'undefined') document.getElementById('audio-force-mono').checked = parsed.PLAYER_FORCE_MONO;
-    if(typeof parsed.REMOVE_AUDIO_CONTROLS !== 'undefined') document.getElementById('audio-force-mono').checked = parsed.REMOVE_AUDIO_CONTROLS;
-    // note: not all fields map 1:1; users can edit manually
+    // mapped fields: set values for explicit structured inputs
+    const map = {
+      'L10N_LANGUAGE': 'sys-language',
+      'INITIAL_VOLUME': 'audio-initial-volume',
+      'FIXED_VOLUME': 'audio-fixed-volume',
+      'PLAYER_FORCE_MONO': 'audio-force-mono',
+      'REMOVE_AUDIO_CONTROLS': 'audio-remove-audio-controls',
+      'MUTE_PIN': 'sys-mute-pin',
+      'BRIGHTNESS_PIN': 'sys-display-brightness',
+      'VU_PEAK': 'sys-vu'
+    };
+    Object.keys(map).forEach(k=>{
+      try{
+        const el = document.getElementById(map[k]); if(!el) return;
+        const v = parsed[k]; if(typeof v === 'undefined') return;
+        if(el.type === 'checkbox') el.checked = !!v;
+        else el.value = String(v);
+      }catch(e){}
+    });
+
+    // put full parsed JSON into editor
+    const raw = document.getElementById('adv-raw-settings'); if(raw) raw.value = JSON.stringify(parsed,null,2);
+
+    // build dynamic inputs for any remaining keys (not present as structured fields)
+    const mappedKeys = new Set(Object.keys(map));
+    const dynContainer = document.createElement('div'); dynContainer.style.marginTop='12px';
+    dynContainer.innerHTML = '<h4>Wszystkie pozostałe klucze z myoptions.h</h4>';
+    Object.keys(parsed).sort().forEach(k=>{
+      if(mappedKeys.has(k)) return;
+      const v = parsed[k];
+      const row = document.createElement('div'); row.style.margin='6px 0';
+      const label = document.createElement('label'); label.style.display='block'; label.style.fontWeight='600'; label.textContent = k;
+      let input;
+      if(typeof v === 'boolean'){
+        input = document.createElement('input'); input.type='checkbox'; input.checked = v; input.dataset.key=k;
+      } else if(Number.isInteger(v) || (/^-?\d+$/.test(String(v)))){
+        input = document.createElement('input'); input.type='number'; input.value = String(v); input.dataset.key=k;
+      } else {
+        input = document.createElement('input'); input.type='text'; input.value = String(v); input.dataset.key=k;
+      }
+      input.style.marginTop='6px'; input.style.width='100%'; row.appendChild(label); row.appendChild(input); dynContainer.appendChild(row);
+    });
+    settingsContainer.appendChild(dynContainer);
+    // wire import/download JSON buttons
+    document.getElementById('adv-import-json')?.addEventListener('click', ()=>{
+      const txt = document.getElementById('adv-raw-settings').value;
+      try{ const obj = JSON.parse(txt); // apply to mapped fields and dynamic inputs
+        Object.keys(obj).forEach(k=>{
+          const target = map[k] && document.getElementById(map[k]); if(target){ if(target.type==='checkbox') target.checked = !!obj[k]; else target.value = String(obj[k]); }
+          const dyn = settingsContainer.querySelector(`[data-key="${k}"]`); if(dyn){ if(dyn.type==='checkbox') dyn.checked = !!obj[k]; else dyn.value = String(obj[k]); }
+        });
+        alert('Import JSON: pola zaktualizowane');
+      }catch(e){ alert('Błąd parsowania JSON'); }
+    });
+    document.getElementById('adv-download-json')?.addEventListener('click', ()=>{
+      const blob=new Blob([JSON.stringify(parsed,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='myoptions.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+    document.getElementById('adv-clear-json')?.addEventListener('click', ()=>{ if(confirm('Wyczyścić pole JSON?')) document.getElementById('adv-raw-settings').value=''; });
   }
 
   function collectSettingsFromContainer(){
@@ -182,7 +230,14 @@
     const out = {};
     inputs.forEach(inp=>{
       const key = inp.dataset.key;
-      if(!key) return;
+      // also allow structured fields that have ids mapped to keys
+      if(!key){
+        // try reverse map lookup from id
+        const id = inp.id; if(!id) return; const reverse = {
+          'sys-language':'L10N_LANGUAGE','audio-initial-volume':'INITIAL_VOLUME','audio-fixed-volume':'FIXED_VOLUME','audio-force-mono':'PLAYER_FORCE_MONO','audio-remove-audio-controls':'REMOVE_AUDIO_CONTROLS','sys-mute-pin':'MUTE_PIN','sys-display-brightness':'BRIGHTNESS_PIN','sys-vu':'VU_PEAK'
+        };
+        if(reverse[id]) inp.dataset.key = reverse[id]; else return;
+      }
       if(inp.type === 'checkbox') out[key] = !!inp.checked;
       else if(inp.type === 'number') out[key] = parseInt(inp.value||0);
       else out[key] = inp.value;
