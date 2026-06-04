@@ -77,7 +77,7 @@
     titleEl.textContent = state.track?.title || '—';
     artistEl.textContent = state.track?.artist || '—';
     streamEl.textContent = state.track?.stream || '—';
-    playBtn.classList.toggle('primary', state.playing);
+    playBtn.classList.toggle('active', state.playing);
     vol.value = state.volume || 50;
     renderPlaylist();
   }
