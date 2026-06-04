@@ -125,3 +125,10 @@ footer{padding:12px 24px;border-top:1px solid rgba(255,255,255,0.03);font-size:1
 @media(max-width:900px){
   #settings-section{max-width:92%;margin:12px}
 }
+
+/* Customize tab helpers */
+.custom-row{padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.02);background:linear-gradient(180deg,transparent,rgba(255,255,255,0.01));}
+.custom-actions{display:flex;gap:8px;align-items:center}
+.custom-help{display:inline-block;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.02);color:var(--muted);text-align:center;line-height:20px;cursor:help}
+.custom-row input[type=text], .custom-row input[type=number]{padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--fg)}
+.custom-row input[type=checkbox]{transform:scale(1.1)}

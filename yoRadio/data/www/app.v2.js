@@ -238,8 +238,17 @@
       const table = document.createElement('div'); table.style.display='grid'; table.style.gridTemplateColumns='1fr 1fr'; table.style.gap='8px';
       Object.keys(parsed).sort().forEach(k=>{
         const v = parsed[k];
-        const wrap = document.createElement('div'); wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.gap='6px';
-        const lbl = document.createElement('label'); lbl.textContent = k; lbl.style.fontWeight='600'; lbl.style.fontSize='13px';
+        const wrap = document.createElement('div'); wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.gap='6px'; wrap.className='custom-row';
+        const head = document.createElement('div'); head.style.display='flex'; head.style.justifyContent='space-between'; head.style.alignItems='center';
+        const lbl = document.createElement('label'); lbl.textContent = k; lbl.style.fontWeight='600'; lbl.style.fontSize='13px'; lbl.style.marginRight='8px';
+        const actions = document.createElement('div'); actions.className='custom-actions';
+        // help icon if available
+        const helpTxt = (typeof helpTexts !== 'undefined' && helpTexts[k]) ? helpTexts[k] : '';
+        if(helpTxt){ const help = document.createElement('span'); help.className='custom-help'; help.textContent='?'; help.title = helpTxt; actions.appendChild(help); }
+        // reset button
+        const reset = document.createElement('button'); reset.type='button'; reset.className='btn'; reset.textContent='Reset'; reset.dataset.key = k; reset.dataset.default = String(v);
+        reset.style.padding='4px 8px'; reset.style.fontSize='12px'; actions.appendChild(reset);
+        head.appendChild(lbl); head.appendChild(actions);
         let inp;
         if(typeof v === 'boolean'){
           inp = document.createElement('input'); inp.type='checkbox'; inp.checked = !!v; inp.dataset.key = k;
@@ -248,10 +257,20 @@
         } else {
           inp = document.createElement('input'); inp.type='text'; inp.value = String(v); inp.dataset.key = k;
         }
-        inp.style.width='100%'; wrap.appendChild(lbl); wrap.appendChild(inp); table.appendChild(wrap);
+        inp.style.width='100%'; wrap.appendChild(head); wrap.appendChild(inp); table.appendChild(wrap);
       });
       customizeContainer.appendChild(table);
     }
+    // wire reset buttons
+    try{
+      const resets = customizeContainer.querySelectorAll('button[data-key]');
+      resets.forEach(b=> b.addEventListener('click', (e)=>{
+        const key = b.dataset.key; const def = b.dataset.default;
+        const inp = customizeContainer.querySelector(`[data-key="${key}"]`);
+        if(!inp) return;
+        if(inp.type === 'checkbox') inp.checked = (def === 'true'); else inp.value = def;
+      }));
+    }catch(e){}
     // apply help texts as title attributes
     Object.keys(helpTexts).forEach(id=>{
       const el = document.getElementById(id);
