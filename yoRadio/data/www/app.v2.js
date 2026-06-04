@@ -247,6 +247,11 @@
 
   document.getElementById('apply-settings')?.addEventListener('click', ()=>{
     const payload = collectSettingsFromContainer();
+    // basic validation
+    if(typeof payload.INITIAL_VOLUME !== 'undefined' && (payload.INITIAL_VOLUME < 0 || payload.INITIAL_VOLUME > 100)) return alert('INITIAL_VOLUME musi być 0-100');
+    if(typeof payload.FIXED_VOLUME !== 'undefined' && (payload.FIXED_VOLUME < 0 || payload.FIXED_VOLUME > 255)) return alert('FIXED_VOLUME musi być 0-255');
+    if(typeof payload.BRIGHTNESS_PIN !== 'undefined' && (payload.BRIGHTNESS_PIN < 0 || payload.BRIGHTNESS_PIN > 255)) return alert('BRIGHTNESS_PIN musi być 0-255');
+    // send
     api('/api/settings','POST', {settings: payload}).then(res=>{
       if(res && res.ok){ alert('Ustawienia zastosowane (demo)'); state.device_settings = payload; }
       else alert('Błąd przy zastosowaniu ustawień');
@@ -258,16 +263,41 @@
     api('/api/settings','POST', payload).then(res=>{ if(res && res.ok) alert('Ustawienia zapisane (demo)'); else alert('Błąd zapisu'); });
   });
 
+  // export myoptions.h generator
+  const exportBtn = document.createElement('button'); exportBtn.className='btn'; exportBtn.textContent='Eksportuj myoptions.h';
+  exportBtn.style.marginLeft='8px'; document.getElementById('settings-section')?.appendChild(exportBtn);
+  exportBtn.addEventListener('click', ()=>{
+    const payload = collectSettingsFromContainer();
+    // prefer raw JSON if present
+    const raw = document.getElementById('adv-raw-settings')?.value; let obj = payload;
+    try{ if(raw && raw.trim()) obj = JSON.parse(raw); }catch(e){}
+    // build header
+    let out = '// Generated myoptions.h from WebUI\n#ifndef myoptions_h\n#define myoptions_h\n\n';
+    Object.keys(obj).forEach(k=>{
+      const v = obj[k];
+      if(typeof v === 'boolean') out += `#define ${k} ${v ? 'true' : 'false'}\n`; else if(Number.isInteger(v) || (/^-?\\d+$/.test(String(v)))) out += `#define ${k} ${v}\n`; else out += `#define ${k} ${String(v)}\n`;
+    });
+    out += '\n#endif // myoptions_h\n';
+    const blob = new Blob([out],{type:'text/x-c'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='myoptions.h'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+
   document.getElementById('cancel-settings')?.addEventListener('click', ()=>{ settingsSection.style.display='none'; document.querySelector('main').style.display='grid'; openSettingsBtn.textContent='Ustawienia'; });
   // tab switching
   function showTab(id){
-    ['system','playlists','audio','weather','advanced'].forEach(k=>{
+    ['system','playlists','audio','display','controls','timezone','wifi','weather','tools','timer','advanced'].forEach(k=>{
       const panel = document.getElementById('tab-'+k+'-panel'); if(panel) panel.style.display = (k===id? 'block':'none');
     });
   }
   document.getElementById('tab-system')?.addEventListener('click', ()=> showTab('system'));
   document.getElementById('tab-playlists')?.addEventListener('click', ()=> showTab('playlists'));
   document.getElementById('tab-audio')?.addEventListener('click', ()=> showTab('audio'));
+  document.getElementById('tab-display')?.addEventListener('click', ()=> showTab('display'));
+  document.getElementById('tab-controls')?.addEventListener('click', ()=> showTab('controls'));
+  // timezone, wifi, tools, timer events
+  document.getElementById('tab-timezone')?.addEventListener('click', ()=> showTab('timezone'));
+  document.getElementById('tab-wifi')?.addEventListener('click', ()=> showTab('wifi'));
+  document.getElementById('tab-tools')?.addEventListener('click', ()=> showTab('tools'));
+  document.getElementById('tab-timer')?.addEventListener('click', ()=> showTab('timer'));
   document.getElementById('tab-weather')?.addEventListener('click', ()=> showTab('weather'));
   document.getElementById('tab-advanced')?.addEventListener('click', ()=> showTab('advanced'));
   showTab('system');
@@ -277,6 +307,34 @@
   document.getElementById('download-wifi-template')?.addEventListener('click', ()=>{
     const txt = 'SSID\tPASSWORD\n'; const blob = new Blob([txt], {type:'text/plain'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='wifi.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   });
+
+  // wifi export (build csv from inputs)
+  document.getElementById('wifiexport')?.addEventListener('click', ()=>{
+    const rows = [];
+    for(let i=0;i<5;i++){ const ss=document.getElementById('ssid'+i).value||''; const pw=document.getElementById('pass'+i).value||''; if(ss) rows.push(`${ss}\t${pw}`); }
+    if(!rows.length) return alert('Brak zapisanych sieci');
+    const blob = new Blob([rows.join('\n')], {type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='wifi.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+  document.getElementById('wifiupload')?.addEventListener('click', ()=>{
+    // demo: package wifi CSV and POST to /upload (same as device). If server doesn't accept, offer download.
+    const rows = [];
+    for(let i=0;i<5;i++){ const ss=document.getElementById('ssid'+i).value||''; const pw=document.getElementById('pass'+i).value||''; if(ss) rows.push(`${ss}\t${pw}`); }
+    if(!rows.length) return alert('Brak sieci do wysłania');
+    const file = new File([rows.join('\n')],'wifi.csv',{type:'text/plain'});
+    const fd = new FormData(); fd.append('wifile', file);
+    fetch('/upload',{method:'POST',body:fd}).then(r=>{ if(r.ok) alert('Wysłano. Urządzenie może się zrestartować.'); else { alert('Serwer demo nie przyjął pliku — pobierz plik lokalnie.'); const url=URL.createObjectURL(file); const a=document.createElement('a'); a.href=url; a.download='wifi.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); } }).catch(()=>{ const url=URL.createObjectURL(file); const a=document.createElement('a'); a.href=url; a.download='wifi.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); alert('Błąd sieci — plik pobrany lokalnie.'); });
+  });
+
+  // tools buttons
+  document.getElementById('tool-reboot')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'reboot'}).then(()=>alert('Reboot (demo)')));
+  document.getElementById('tool-format')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'format'}).then(()=>alert('Format (demo)')));
+  document.getElementById('tool-reset')?.addEventListener('click', ()=> api('/api/control','POST',{cmd:'reset'}).then(()=>alert('Reset settings (demo)')));
+
+  document.getElementById('tz-apply')?.addEventListener('click', ()=>{
+    const h = document.getElementById('tz-hours').value; const m = document.getElementById('tz-minutes').value; api('/api/control','POST',{cmd:'tz',hours:h,minutes:m}).then(()=>alert('Timezone applied (demo)'));
+  });
+
+  document.getElementById('timer-apply')?.addEventListener('click', ()=>{ const s=document.getElementById('timer-start').value; const e=document.getElementById('timer-stop').value; api('/api/settings','POST',{timer:{start:s,stop:e}}).then(()=>alert('Timer saved (demo)')); });
 
   // EQ preset buttons
   document.querySelectorAll('[data-preset]').forEach(b=> b.addEventListener('click', ()=>{

@@ -71,6 +71,8 @@
         <button class="btn" id="tab-system">System</button>
         <button class="btn" id="tab-playlists">Playlists</button>
         <button class="btn" id="tab-audio">Audio</button>
+        <button class="btn" id="tab-display">Display</button>
+        <button class="btn" id="tab-controls">Controls</button>
         <button class="btn" id="tab-weather">Pogoda</button>
         <button class="btn" id="tab-advanced">Zaawansowane</button>
       </nav>
@@ -109,6 +111,67 @@
           <label>Balance<br><input id="audio-balance" type="range" min="-50" max="50" data-key="BALANCE"></label>
           <label><input id="audio-force-mono" type="checkbox" data-key="PLAYER_FORCE_MONO"> Wymuś mono</label>
           <label><input id="audio-remove-audio-controls" type="checkbox" data-key="REMOVE_AUDIO_CONTROLS"> Usuń kontrolki audio</label>
+        </div>
+
+        <div id="tab-display-panel" class="settings-panel" style="display:none">
+          <h3>Ekran / Display</h3>
+          <label><input id="display-flip" type="checkbox" data-key="FLIP_SCREEN"> Flip screen</label>
+          <label><input id="display-invert" type="checkbox" data-key="INVERT_DISPLAY"> Invert display</label>
+          <label>Brightness<br><input id="display-brightness" type="range" min="0" max="255" data-key="BRIGHTNESS_PIN"></label>
+          <div style="margin-top:8px">
+            <label>Screensaver timeout (sec)<br><input id="display-screensaver-time" type="number" min="0" max="65520"></label>
+            <label><input id="display-screensaver-enabled" type="checkbox"> Enable screensaver</label>
+          </div>
+        </div>
+
+        <div id="tab-controls-panel" class="settings-panel" style="display:none">
+          <h3>Controls</h3>
+          <label>Volume steps<br><input id="controls-vol-steps" type="number" min="1" max="10" data-key="VOL_STEPS"></label>
+          <label>Encoder acceleration<br><input id="controls-enc-acc" type="number" min="0" max="1000" data-key="ENC_ACCEL"></label>
+          <label><input id="controls-oneclick" type="checkbox" data-key="ONE_CLICK_SWITCH"> One-click station switching</label>
+          <label>IR tolerance<br><input id="controls-ir-tol" type="number" min="0" max="255" data-key="IR_TOLERANCE"></label>
+        </div>
+
+        <div id="tab-timezone-panel" class="settings-panel" style="display:none">
+          <h3>Timezone</h3>
+          <label>Hours offset<br><input id="tz-hours" type="number" min="-12" max="14" data-key="TZ_HOURS"></label>
+          <label>Minutes offset<br><input id="tz-minutes" type="number" min="0" max="45" step="15" data-key="TZ_MINUTES"></label>
+          <label>SNTP server 1<br><input id="tz-sntp1" type="text" data-key="SNTP1"></label>
+          <label>SNTP server 2<br><input id="tz-sntp2" type="text" data-key="SNTP2"></label>
+          <div style="margin-top:8px"><button id="tz-apply" class="btn">Apply TZ</button></div>
+        </div>
+
+        <div id="tab-wifi-panel" class="settings-panel" style="display:none">
+          <h3>Wi‑Fi</h3>
+          <div id="wifi-credentials">
+            <div class="wifi-row"><input id="ssid0" placeholder="ssid0"><input id="pass0" placeholder="pass0"></div>
+            <div class="wifi-row"><input id="ssid1" placeholder="ssid1"><input id="pass1" placeholder="pass1"></div>
+            <div class="wifi-row"><input id="ssid2" placeholder="ssid2"><input id="pass2" placeholder="pass2"></div>
+            <div class="wifi-row"><input id="ssid3" placeholder="ssid3"><input id="pass3" placeholder="pass3"></div>
+            <div class="wifi-row"><input id="ssid4" placeholder="ssid4"><input id="pass4" placeholder="pass4"></div>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <button id="wifiexport" class="btn">Pobierz wifi.csv</button>
+            <button id="wifiupload" class="btn">Wyślij i zrestartuj (demo)</button>
+          </div>
+        </div>
+
+        <div id="tab-tools-panel" class="settings-panel" style="display:none">
+          <h3>Tools</h3>
+          <label><input id="tool-telnet" type="checkbox" data-key="TELNET"> Telnet server</label>
+          <label><input id="tool-watchdog" type="checkbox" data-key="ENABLE_STALL_WATCHDOG"> Audio watchdog</label>
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <button id="tool-reboot" class="btn">Reboot</button>
+            <button id="tool-format" class="btn">Format SPIFFS</button>
+            <button id="tool-reset" class="btn">Reset settings</button>
+          </div>
+        </div>
+
+        <div id="tab-timer-panel" class="settings-panel" style="display:none">
+          <h3>Timer</h3>
+          <label>Auto start time<br><input id="timer-start" type="time"></label>
+          <label>Auto stop time<br><input id="timer-stop" type="time"></label>
+          <div style="margin-top:8px"><button id="timer-apply" class="btn">Apply</button></div>
         </div>
 
         <div id="tab-weather-panel" class="settings-panel" style="display:none">
