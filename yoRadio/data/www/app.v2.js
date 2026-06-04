@@ -11,7 +11,7 @@
   const playlistEl = document.getElementById('playlist');
 
   const overlay = document.createElement('div'); overlay.className='overlay'; document.body.appendChild(overlay);
-  const modal = document.createElement('div'); modal.className='modal'; modal.innerHTML = `<h3>Add URL</h3><input id="newurl" style="width:360px;padding:8px;margin-top:8px"><div style="margin-top:10px"><button id="addConfirm">Add</button> <button id="addCancel">Cancel</button></div>`; document.body.appendChild(modal);
+  const modal = document.createElement('div'); modal.className='modal'; modal.innerHTML = `<h3>Add URL</h3><input id="newurl" style="width:360px;padding:8px;margin-top:8px"><div style="margin-top:10px"><button id="addConfirm" class="btn primary">Add</button> <button id="addCancel" class="btn">Cancel</button></div>`; document.body.appendChild(modal);
   document.getElementById('add-url')?.addEventListener('click', ()=>{ overlay.classList.add('show'); modal.classList.add('show'); document.getElementById('newurl').focus(); });
   document.getElementById('addCancel')?.addEventListener('click', ()=>{ overlay.classList.remove('show'); modal.classList.remove('show'); });
   document.getElementById('addConfirm')?.addEventListener('click', ()=>{ const v=document.getElementById('newurl').value.trim(); if(v){ state.playlist.push({title:v,url:v}); syncPlaylist(); overlay.classList.remove('show'); modal.classList.remove('show'); render(); }});
@@ -86,7 +86,7 @@
     const list = document.createElement('div'); list.className='list';
     (state.playlist||[]).forEach((it,idx)=>{
       const li=document.createElement('li');
-      li.innerHTML = `<div class="info"><div class="t">${escapeHtml(it.title||it.url)}</div><div class="s">${escapeHtml(it.url)}</div></div><div class="actions"><button data-idx="${idx}">Play</button></div>`;
+      li.innerHTML = `<div class="info"><div class="t">${escapeHtml(it.title||it.url)}</div><div class="s">${escapeHtml(it.url)}</div></div><div class="actions"><button class="btn" data-idx="${idx}">Play</button></div>`;
       list.appendChild(li);
     });
     playlistEl.innerHTML=''; playlistEl.appendChild(list);
